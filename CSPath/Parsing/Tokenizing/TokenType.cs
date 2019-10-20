@@ -17,6 +17,8 @@
         CloseBracket,
         OpenParen,
         CloseParen,
+        OpenAngle,
+        CloseAngle,
         Comma,
 
         Integer,
