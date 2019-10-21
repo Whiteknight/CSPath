@@ -11,6 +11,11 @@ namespace CSPath.Parsing.Parsers
             return new AnyParser<TInput, TOutput>(produce);
         }
 
+        public static IParser<TInput, TOutput> Deferred<TInput, TOutput>(Func<IParser<TInput, TOutput>> getParser)
+        {
+            return new DeferredParser<TInput, TOutput>(getParser);
+        }
+
         public static IParser<TInput, TOutput> First<TInput, TOutput>(params IParser<TInput, TOutput>[] parsers)
         {
             return new FirstParser<TInput, TOutput>(parsers.ToArray());
@@ -34,6 +39,11 @@ namespace CSPath.Parsing.Parsers
         public static IParser<TInput, TOutput> List<TInput, TItem, TOutput>(IParser<TInput, TItem> parser, Func<IReadOnlyList<TItem>, TOutput> produce, bool atLeastOne = false)
         {
             return new ListParser<TInput, TItem, TOutput>(parser, produce, atLeastOne);
+        }
+
+        public static IParser<TInput, TOutput> Produce<TInput, TOutput>(Func<TOutput> produce)
+        {
+            return new ProduceParser<TInput, TOutput>(produce);
         }
 
         public static IParser<TInput, TOutput> Rule<TInput, T1, T2, TOutput>(IParser<TInput, T1> p1, IParser<TInput, T2> p2, Func<T1, T2, TOutput> produce)

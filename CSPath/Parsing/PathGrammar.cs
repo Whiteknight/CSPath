@@ -14,6 +14,22 @@ namespace CSPath.Parsing
 
         public static IParser<PathToken, IReadOnlyList<IPathStage>> GetParser()
         {
+            var primitiveValues = First(
+                Token(TokenType.Integer, t => (object)int.Parse(t.Value)),
+                Token(TokenType.String, t => (object)t.Value),
+                Token(TokenType.Character, t => (object)t.Value[0]),
+                Token(TokenType.Double, t => (object)int.Parse(t.Value)),
+                Token(TokenType.Long, t => (object)int.Parse(t.Value)),
+                Token(TokenType.Float, t => (object)int.Parse(t.Value)),
+                Token(TokenType.Decimal, t => (object)int.Parse(t.Value)),
+                Token(TokenType.UInteger, t => (object)int.Parse(t.Value)),
+                Token(TokenType.ULong, t => (object)int.Parse(t.Value)),
+                Token(TokenType.True, t => (object)true),
+                Token(TokenType.False, t => (object)false)
+            );
+
+            IParser<PathToken, IReadOnlyList<IPathStage>> singlePath = null;
+
             // property = "*" | "." <identifier> | "."
             var propertyPaths = First(
                 Token(TokenType.Star, t => (IPathStage) new AllPropertiesNestedPath()),
@@ -36,9 +52,7 @@ namespace CSPath.Parsing
                     Token(TokenType.OpenBracket),
                     SeparatedList(
                         First(
-                            // TODO: More key types. Should be able to support all primitive values
-                            Token(TokenType.Integer, t => (object) int.Parse(t.Value)),
-                            Token(TokenType.String, t => (object) t.Value),
+                            primitiveValues,
                             new ThrowExceptionParser<PathToken, object>(t => $"Unexpected token in indexer {t.Peek()}")
                         ),
                         Token(TokenType.Comma),
@@ -51,7 +65,7 @@ namespace CSPath.Parsing
                 Rule(
                     Token(TokenType.OpenBracket),
                     new ThrowExceptionParser<PathToken, object>(t => $"Expected ']' or key, found {t.Peek()}"),
-                    (open, err) => (IPathStage)null
+                    (open, err) => (IPathStage) null
                 )
             );
 
@@ -75,25 +89,69 @@ namespace CSPath.Parsing
                 (open, name, close) => (IPathStage) new TypedPath(name)
             );
 
+            // TODO: Form where we test that the selector returns at least some items without comparing values
+            // TODO: Form where we test that the selector returns no values, without comparisons
+            // TODO: Form where we test that the selector returns exactly one value, without comparison
+            // TODO: We could acheive this with named methods atleast(n), none() or exactly(n)
+            // "{" (<property> | <indexer>) "=" ("*" | "&" | "|" | "") (<primitive> | "null")
+            var predicateComparePaths = Rule(
+                Token(TokenType.OpenBrace),
+                First(
+                    Deferred(() => singlePath),
+                    new ThrowExceptionParser<PathToken, IReadOnlyList<IPathStage>>(t => $"Expected path but found {t.Peek()}")
+                ),
+                First(
+                    // TODO: Support other equality comparisons < > <= >= !=
+                    Token(TokenType.Equals),
+                    new ThrowExceptionParser<PathToken, PathToken>(t => $"Expected '=' but found {t.Peek()}")
+                ),
+                First(
+                    Token(TokenType.Star, t => t.Value),
+                    Token(TokenType.Plus, t => t.Value),
+                    Token(TokenType.Bar, t => t.Value),
+                    Produce<PathToken, string>(() => "")
+                ),
+                First(
+                    primitiveValues,
+                    Token(TokenType.Null, t => (object)null),
+                    new ThrowExceptionParser<PathToken, object>(t => $"Expected primitive value but found {t.Peek()}")
+                ),
+                First(
+                    Token(TokenType.CloseBrace),
+                    new ThrowExceptionParser<PathToken, PathToken>(t => $"Expected '}}' but found {t.Peek()}")
+                ),
+                (open, path, eq, mod, value, close) => (IPathStage)new PredicatePath(path, eq.Value, value, mod)
+            );
+
             // single = (<property> | <indexer> | <typeConstraint>)*
-            var singlePath = List(
+            singlePath = List(
                 First(
                     propertyPaths,
                     indexerPaths,
-                    typeConstraintPaths
+                    typeConstraintPaths,
+                    predicateComparePaths
                 ),
-                // TODO: "{" <Path> "=" <value> "}" and other similar predicates
                 paths => paths
             );
 
-            // concat = <single> ("|" <single>)*
+            // concat = <single> ("|" <single>)* 
             var concatPaths = SeparatedList(
                 singlePath,
                 Token(TokenType.Bar),
                 paths => paths.Count == 1 ? paths[0] : new IPathStage[] { new CombinePath(paths) }
             );
 
-            return concatPaths;
+            // <concat> <EndOfInput>
+            var all = Rule(
+                concatPaths,
+                First(
+                    Token(TokenType.EndOfInput),
+                    new ThrowExceptionParser<PathToken, PathToken>(t => $"Expected EndOfInput but found {t.Peek()}")
+                ),
+                (stages, eoi) => stages
+            );
+
+            return all;
 
             //return List(
             //    First(

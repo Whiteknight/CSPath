@@ -20,6 +20,10 @@
         OpenAngle,
         CloseAngle,
         Comma,
+        OpenBrace,
+        CloseBrace,
+        Equals,
+        Plus,
 
         Integer,
         UInteger,
@@ -30,6 +34,11 @@
         ULong,
 
         Character,
-        String
+        String,
+
+        True,
+        False,
+
+        Null
     }
 }

@@ -15,15 +15,7 @@ namespace CSPath.Paths
         public IEnumerable<object> Filter(IEnumerable<object> input)
         {
             var inputAsList = input.ToList();
-            return _paths.SelectMany(p => FilterPath(p, inputAsList));
-        }
-
-        public IEnumerable<object> FilterPath(IReadOnlyList<IPathStage> path, IReadOnlyList<object> input)
-        {
-            IEnumerable<object> current = input;
-            foreach (var stage in path)
-                current = stage.Filter(current).ToList();
-            return current;
+            return _paths.SelectMany(p => p.Filter(inputAsList));
         }
     }
 }

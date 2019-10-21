@@ -72,6 +72,9 @@ namespace CSPath.Parsing.Tokenizing
                 // Whitespace
                 List(If<char>(char.IsWhiteSpace), t => new PathToken(new string(t.ToArray()), TokenType.Whitespace), true),
 
+                Match("true", c => new PathToken(null, TokenType.True)),
+                Match("false", c => new PathToken(null, TokenType.False)),
+                Match("null", c => new PathToken(null, TokenType.Null)),
                 // Identifiers and names
                 identifiers,
 
@@ -88,6 +91,10 @@ namespace CSPath.Parsing.Tokenizing
                 Match(",", c => new PathToken(new string(c), TokenType.Comma)),
                 Match("<", c => new PathToken(new string(c), TokenType.OpenAngle)),
                 Match(">", c => new PathToken(new string(c), TokenType.CloseAngle)),
+                Match("{", c => new PathToken(new string(c), TokenType.OpenBrace)),
+                Match("}", c => new PathToken(new string(c), TokenType.CloseBrace)),
+                Match("=", c => new PathToken(new string(c), TokenType.Equals)),
+                Match("+", c => new PathToken(new string(c), TokenType.Plus)),
 
                 // Primitive values, numbers, chars, strings
                 If(t => char.IsNumber(t.Peek()) || t.Peek() == '-', new NumberParser()),

@@ -6,12 +6,17 @@ namespace CSPath.Parsing.Parsers
     public class NumberParser : IParser<char, PathToken>
     {
         public (bool success, object value) ParseUntyped(ISequence<char> t) => Parse(t);
+
         public (bool success, PathToken value) Parse(ISequence<char> t)
         {
+            // TODO: "_" separator in a number
+            // TODO: "0x" hex literals
             var chars = new List<char>();
             char c;
             bool hasDecimal = false;
 
+
+            // Might be - or a number
             c = t.GetNext();
             chars.Add(c);
             
