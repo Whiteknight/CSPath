@@ -32,6 +32,5 @@ namespace CSPath.Tests
             result.Should().BeEquivalentTo(new [] {"test"});
 
         }
-
     }
 }

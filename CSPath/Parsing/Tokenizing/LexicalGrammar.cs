@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using CSPath.Parsing.Parsers;
 using static CSPath.Parsing.Parsers.ParserMethods;
@@ -9,10 +8,13 @@ namespace CSPath.Parsing.Tokenizing
 {
     public static class LexicalGrammar
     {
+        // TODO: Static instance of IParser so we only need to build it once
+
         private static readonly HashSet<char> _hexDigits = new HashSet<char>("abcdefABCDEF0123456789");
 
         public static IParser<char, PathToken> GetParser()
         {
+            // identifier = (<char> | "_") (<char> | <digit> | "_")*
             var identifiers = Rule(
                 If<char>(c => char.IsLetter(c) || c == '_'),
                 List(
@@ -21,6 +23,8 @@ namespace CSPath.Parsing.Tokenizing
                 ),
                 (start, rest) => new PathToken(start.ToString() + new string(rest), TokenType.Identifier)
             );
+
+            // chars = "'" ("\" "x" <hexdigit>+ | "\" . | .) "'"
             var chars = Rule(
                 Match("'", c => c[0]),
                 First(
@@ -42,6 +46,8 @@ namespace CSPath.Parsing.Tokenizing
                 (start, content, end) => new PathToken(content, TokenType.Character)
             );
 
+            // TODO: Do we want to support @ strings?
+            // strings = """ ("\" . | .)* """
             var strings = Rule(
                 Match("\"", c => c[0]),
                 List(
@@ -60,9 +66,16 @@ namespace CSPath.Parsing.Tokenizing
             );
 
             return First(
+                // input char sequence returns "\0" for end-of-input. Detect that and return an EOI token
                 Match("\0", c => PathToken.EndOfInput()),
+
+                // Whitespace
                 List(If<char>(char.IsWhiteSpace), t => new PathToken(new string(t.ToArray()), TokenType.Whitespace), true),
+
+                // Identifiers and names
                 identifiers,
+
+                // Symbols and operators
                 Match(".", c => new PathToken(new string(c), TokenType.Dot)),
                 Match("//", c => new PathToken(new string(c), TokenType.DoubleForwardSlash)),
                 Match("/", c => new PathToken(new string(c), TokenType.ForwardSlash)),
@@ -75,9 +88,13 @@ namespace CSPath.Parsing.Tokenizing
                 Match(",", c => new PathToken(new string(c), TokenType.Comma)),
                 Match("<", c => new PathToken(new string(c), TokenType.OpenAngle)),
                 Match(">", c => new PathToken(new string(c), TokenType.CloseAngle)),
+
+                // Primitive values, numbers, chars, strings
                 If(t => char.IsNumber(t.Peek()) || t.Peek() == '-', new NumberParser()),
                 chars,
                 strings,
+
+                // If we haven't matched so far, it's an unexected character
                 new ThrowExceptionParser<char, PathToken>(t => $"Unexpected character {t.Peek()}")
             );
         }
