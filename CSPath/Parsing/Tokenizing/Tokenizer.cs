@@ -45,8 +45,6 @@ namespace CSPath.Parsing.Tokenizing
                 _putbacks.Push(pathToken);
         }
 
-        public bool IsValid(PathToken c) => c != null && c.Type != TokenType.Unknown;
-
         public IEnumerator<PathToken> GetEnumerator()
         {
             while (true)

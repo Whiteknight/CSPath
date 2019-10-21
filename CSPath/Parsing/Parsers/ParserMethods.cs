@@ -6,11 +6,6 @@ namespace CSPath.Parsing.Parsers
 {
     public static class ParserMethods
     {
-        public static IParser<TInput, TOutput> Any<TInput, TOutput>(Func<TInput, TOutput> produce)
-        {
-            return new AnyParser<TInput, TOutput>(produce);
-        }
-
         public static IParser<TInput, TOutput> Deferred<TInput, TOutput>(Func<IParser<TInput, TOutput>> getParser)
         {
             return new DeferredParser<TInput, TOutput>(getParser);

@@ -36,7 +36,7 @@ namespace CSPath.Parsing.Tokenizing
                     ),
                     Rule(
                         Match("\\", c => c),
-                        Any<char, char>(c => c),
+                        If<char>(c => c != '\0'),
                         (escape, c) => c.ToString()
                     ),
                     If<char, string>(c => c != '\'', c => c.ToString()),
@@ -54,7 +54,7 @@ namespace CSPath.Parsing.Tokenizing
                     First(
                         Rule(
                             Match("\\", c => c[0]),
-                            Any<char, char>(c => c),
+                            If<char>(c => c != '\0'),
                             (escape, c) => c.ToString()
                         ),
                         If<char, string>(c => c != '"', c => c.ToString())

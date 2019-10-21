@@ -27,7 +27,5 @@ namespace CSPath.Parsing.Tokenizing
         }
 
         public void PutBack(char c) => _putbacks.Push(c);
-
-        public bool IsValid(char c) => c != '\0';
     }
 }

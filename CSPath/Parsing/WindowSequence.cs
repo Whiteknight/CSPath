@@ -20,8 +20,6 @@ namespace CSPath.Parsing
             _inner.PutBack(t);
         }
 
-        public bool IsValid(T c) => _inner.IsValid(c);
-
         public T GetNext()
         {
             var token = _inner.GetNext();
