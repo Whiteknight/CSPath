@@ -2,6 +2,23 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>CSPath</AssemblyName>
+    <RootNamespace>CSPath</RootNamespace>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <LangVersion>8.0</LangVersion>
+    <Version>0.0.1</Version>
+    <Authors>Andrew F. Whitworth</Authors>
+    <Company />
+    <Description>XPath-inspired object graph traversal</Description>
+    <Copyright>Copyright 2019</Copyright>
+    <PackageProjectUrl>https://github.com/Whiteknight/CSPath</PackageProjectUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="LICENSE" Pack="true" PackagePath="">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 
 </Project>
