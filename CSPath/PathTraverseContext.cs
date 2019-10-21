@@ -17,10 +17,10 @@ namespace CSPath
 
         private IEnumerable<object> Traverse(IEnumerable<object> objects)
         {
-            var current = objects.ToList();
+            var current = objects;
             foreach (var stage in _stages)
             {
-                current = stage.Filter(current).ToList();
+                current = stage.Filter(current);
             }
 
             return current;

@@ -13,6 +13,7 @@ CSPath works like XPath, where you write a path as a string, and CSPath will ret
 * `["key"]` Accesses the string-keyed indexer of the current object and retrieves element `"key"`
 * `<TypeName>` Allows only values of the given type (type short name, case-insensitive)
 * `<Fully.Qualified.TypeName>` Allows only values of the given type (type full name, case-insensitive)
+* '|' Takes all the results from the path on the left and all the results from the path on the right
 
 When you include the `CSPath` namespace, the `.Path()` method is available as an extension method on all `object`s. You can invoke it like this:
 
@@ -20,7 +21,7 @@ When you include the `CSPath` namespace, the `.Path()` method is available as an
 var result = myObj.Path(...);
 ```
 
-## Examples
+### Examples
 
 Get all property values of the current object:
 
@@ -52,7 +53,21 @@ Navigate a deeply-nested structure
 var result = myObj.Path(".Items[0].Values[\"Key\"].Length");
 ```
 
+## Usages
+
+This package was created to address some needs which arise occasionally:
+
+1. Ability to store a value location from an object graph in a database
+1. * for example to refer to a particular nested value for an alert
+1. Ability to reference a location in an object graph in configuration
+1. * For example, to setup validations by config instead of hard-coding them
+1. Ability to query an object through an API or service boundary
+
+
 ## Design Notes
 
-This package *is not intended for high-performance applications*. There's a limit to how much optimizing we can do when we don't know the types of incoming objects at each stage of the path.
+This package *is not intended for high-performance applications*. There's a limit to how much optimizing we can do when we don't know the types of incoming objects at each stage of the path. The parser performance is decent but not optimal. We are currently focusing on editability and not raw performance.
 
+The parser and tokenizer are both built using combinator-based recursive descent. The parser outputs a list of `IPath` which are then invoked iteratively to return the final result.
+
+XML documents are just markup and don't come with built-in functionality. So, XPath has been designed with a lot of functionality to add some "behavior" to these documents. CSPath doesn't need to do that because C# objects have their own behaviors (methods, etc) and many use-cases can be better served by alternative mechanisms (LINQ Queries, method calls). CSPath does not intend to include all the functionality of XPath, though it does draw inspiration from XPath.

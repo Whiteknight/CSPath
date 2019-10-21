@@ -5,19 +5,25 @@ namespace CSPath.Paths
 {
     public class CombinePath : IPathStage
     {
-        private readonly IPathStage _left;
-        private readonly IPathStage _right;
+        private readonly IReadOnlyList<IReadOnlyList<IPathStage>> _paths;
 
-        public CombinePath(IPathStage left, IPathStage right)
+        public CombinePath(IReadOnlyList<IReadOnlyList<IPathStage>> paths)
         {
-            _left = left ?? new EmptyPath();
-            _right = right ?? new EmptyPath();
-            
+            _paths = paths;
         }
 
         public IEnumerable<object> Filter(IEnumerable<object> input)
         {
-            return _left.Filter(input).Concat(_right.Filter(input));
+            var inputAsList = input.ToList();
+            return _paths.SelectMany(p => FilterPath(p, inputAsList));
+        }
+
+        public IEnumerable<object> FilterPath(IReadOnlyList<IPathStage> path, IReadOnlyList<object> input)
+        {
+            IEnumerable<object> current = input;
+            foreach (var stage in path)
+                current = stage.Filter(current).ToList();
+            return current;
         }
     }
 }

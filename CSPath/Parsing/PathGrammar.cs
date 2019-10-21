@@ -12,9 +12,9 @@ namespace CSPath.Parsing
     {
         public static IParser<PathToken, IReadOnlyList<IPathStage>> GetParser()
         {
-            return List(
+            var singlePath = List(
                 First(
-                    Token(TokenType.Star, t => (IPathStage)new AllPropertiesNestedPath()),
+                    Token(TokenType.Star, t => (IPathStage) new AllPropertiesNestedPath()),
                     Rule(
                         Token(TokenType.Dot),
                         Token(TokenType.Identifier),
@@ -30,8 +30,8 @@ namespace CSPath.Parsing
                         Token(TokenType.OpenBracket),
                         SeparatedList(
                             First(
-                                Token(TokenType.Integer, t => (object)int.Parse(t.Value)),
-                                Token(TokenType.String, t => (object)t.Value),
+                                Token(TokenType.Integer, t => (object) int.Parse(t.Value)),
+                                Token(TokenType.String, t => (object) t.Value),
                                 new ThrowExceptionParser<PathToken, object>(t => $"Unexpected token in indexer {t.Peek()}")
                             ),
                             Token(TokenType.Comma),
@@ -50,11 +50,20 @@ namespace CSPath.Parsing
                             atLeastOne: true
                         ),
                         Token(TokenType.CloseAngle),
-                        (open, name, close) => (IPathStage)new TypedPath(name)
+                        (open, name, close) => (IPathStage) new TypedPath(name)
                     )
                 ),
+                // TODO: "{" <Identifer> "=" <value> "}" and other similar predicates
                 paths => paths
             );
+
+            var concatPaths = SeparatedList(
+                singlePath,
+                Token(TokenType.Bar),
+                paths => paths.Count == 1 ? paths[0] : new IPathStage[] { new CombinePath(paths) }
+            );
+
+            return concatPaths;
 
             //return List(
             //    First(
