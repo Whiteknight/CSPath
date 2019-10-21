@@ -12,7 +12,7 @@ namespace CSPath.Parsing
     {
         // TODO: Static instance of IParser so we only need to build it once
 
-        public static IParser<PathToken, IReadOnlyList<IPathStage>> GetParser()
+        public static IParser<PathToken, IReadOnlyList<IPath>> GetParser()
         {
             var primitiveValues = First(
                 Token(TokenType.Integer, t => (object)int.Parse(t.Value)),
@@ -28,17 +28,17 @@ namespace CSPath.Parsing
                 Token(TokenType.False, t => (object)false)
             );
 
-            IParser<PathToken, IReadOnlyList<IPathStage>> singlePath = null;
+            IParser<PathToken, IReadOnlyList<IPath>> singlePath = null;
 
             // property = "*" | "." <identifier> | "."
             var propertyPaths = First(
-                Token(TokenType.Star, t => (IPathStage) new AllPropertiesNestedPath()),
+                Token(TokenType.Star, t => (IPath) new AllPropertiesNestedPath()),
                 Rule(
                     Token(TokenType.Dot),
                     Token(TokenType.Identifier),
-                    (dot, name) => (IPathStage) new NamedPropertyPath(name.Value)
+                    (dot, name) => (IPath) new NamedPropertyPath(name.Value)
                 ),
-                Transform(Token(TokenType.Dot), t => (IPathStage) new AllPropertiesPath())
+                Transform(Token(TokenType.Dot), t => (IPath) new AllPropertiesPath())
             );
 
             // indexer = "[" "]" | "[" (<integer> | <string>)+ "]"
@@ -46,7 +46,7 @@ namespace CSPath.Parsing
                 Rule(
                     Token(TokenType.OpenBracket),
                     Token(TokenType.CloseBracket),
-                    (open, close) => (IPathStage) new AllIndexerItemsPath()
+                    (open, close) => (IPath) new AllIndexerItemsPath()
                 ),
                 Rule(
                     Token(TokenType.OpenBracket),
@@ -60,12 +60,12 @@ namespace CSPath.Parsing
                         atLeastOne: true
                     ),
                     Token(TokenType.CloseBracket),
-                    (open, indices, close) => (IPathStage) new IndexerItemsPath(indices)
+                    (open, indices, close) => (IPath) new IndexerItemsPath(indices)
                 ),
                 Rule(
                     Token(TokenType.OpenBracket),
                     new ThrowExceptionParser<PathToken, object>(t => $"Expected ']' or key, found {t.Peek()}"),
-                    (open, err) => (IPathStage) null
+                    (open, err) => (IPath) null
                 )
             );
 
@@ -86,7 +86,7 @@ namespace CSPath.Parsing
                     Token(TokenType.CloseAngle),
                     new ThrowExceptionParser<PathToken, PathToken>(t => $"Expected '>' but found {t.Peek()}")
                 ),
-                (open, name, close) => (IPathStage) new TypedPath(name)
+                (open, name, close) => (IPath) new TypedPath(name)
             );
 
             // TODO: Form where we test that the selector returns at least some items without comparing values
@@ -98,7 +98,7 @@ namespace CSPath.Parsing
                 Token(TokenType.OpenBrace),
                 First(
                     Deferred(() => singlePath),
-                    new ThrowExceptionParser<PathToken, IReadOnlyList<IPathStage>>(t => $"Expected path but found {t.Peek()}")
+                    new ThrowExceptionParser<PathToken, IReadOnlyList<IPath>>(t => $"Expected path but found {t.Peek()}")
                 ),
                 First(
                     // TODO: Support other equality comparisons < > <= >= !=
@@ -120,7 +120,7 @@ namespace CSPath.Parsing
                     Token(TokenType.CloseBrace),
                     new ThrowExceptionParser<PathToken, PathToken>(t => $"Expected '}}' but found {t.Peek()}")
                 ),
-                (open, path, eq, mod, value, close) => (IPathStage)new PredicatePath(path, eq.Value, value, mod)
+                (open, path, eq, mod, value, close) => (IPath)new PredicatePath(path, eq.Value, value, mod)
             );
 
             // single = (<property> | <indexer> | <typeConstraint>)*
@@ -138,7 +138,7 @@ namespace CSPath.Parsing
             var concatPaths = SeparatedList(
                 singlePath,
                 Token(TokenType.Bar),
-                paths => paths.Count == 1 ? paths[0] : new IPathStage[] { new CombinePath(paths) }
+                paths => paths.Count == 1 ? paths[0] : new IPath[] { new CombinePath(paths) }
             );
 
             // <concat> <EndOfInput>

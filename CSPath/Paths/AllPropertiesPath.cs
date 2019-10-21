@@ -4,14 +4,14 @@ using System.Reflection;
 
 namespace CSPath.Paths
 {
-    public class AllPropertiesPath : IPathStage
+    public class AllPropertiesPath : IPath
     {
         public IEnumerable<object> Filter(IEnumerable<object> input)
         {
             return input.SelectMany(GetPropertyValues);
         }
 
-        private IEnumerable<object> GetPropertyValues(object obj)
+        private static IEnumerable<object> GetPropertyValues(object obj)
         {
             if (obj == null)
                 return Enumerable.Empty<object>();

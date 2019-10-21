@@ -4,14 +4,14 @@ using System.Linq;
 
 namespace CSPath.Paths
 {
-    public class PredicatePath : IPathStage
+    public class PredicatePath : IPath
     {
-        private readonly IReadOnlyList<IPathStage> _selector;
+        private readonly IReadOnlyList<IPath> _selector;
         private readonly object _value;
         private readonly Func<object, bool> _predicate;
         private readonly string _modifier;
 
-        public PredicatePath(IReadOnlyList<IPathStage> selector, string op, object value, string modifier)
+        public PredicatePath(IReadOnlyList<IPath> selector, string op, object value, string modifier)
         {
             _selector = selector;
             _value = value;

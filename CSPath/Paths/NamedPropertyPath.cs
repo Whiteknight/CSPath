@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace CSPath.Paths
 {
-    public class NamedPropertyPath : IPathStage
+    public class NamedPropertyPath : IPath
     {
         private readonly string _name;
 

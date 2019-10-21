@@ -3,11 +3,11 @@ using System.Linq;
 
 namespace CSPath.Paths
 {
-    public class CombinePath : IPathStage
+    public class CombinePath : IPath
     {
-        private readonly IReadOnlyList<IReadOnlyList<IPathStage>> _paths;
+        private readonly IReadOnlyList<IReadOnlyList<IPath>> _paths;
 
-        public CombinePath(IReadOnlyList<IReadOnlyList<IPathStage>> paths)
+        public CombinePath(IReadOnlyList<IReadOnlyList<IPath>> paths)
         {
             _paths = paths;
         }

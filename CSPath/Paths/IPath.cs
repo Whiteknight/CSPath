@@ -2,7 +2,7 @@
 
 namespace CSPath
 {
-    public interface IPathStage
+    public interface IPath
     {
         IEnumerable<object> Filter(IEnumerable<object> input);
     }

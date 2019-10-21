@@ -7,7 +7,7 @@ namespace CSPath
 {
     public static class ObjectExtensions
     {
-        // TODO: Support different path dialects?
+        // TODO: Support different path dialects via pluggable grammars/parsers?
         // TODO: Variant to wrap each item in an Item object which will include information about where it came from
 
         public static IEnumerable<object> Path(this object obj, string path)

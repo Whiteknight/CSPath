@@ -4,14 +4,14 @@ using System.Linq;
 
 namespace CSPath.Paths
 {
-    public class AllIndexerItemsPath : IPathStage
+    public class AllIndexerItemsPath : IPath
     {
         public IEnumerable<object> Filter(IEnumerable<object> input)
         {
             return input.SelectMany(GetAllIndexerItems);
         }
 
-        private IEnumerable<object> GetAllIndexerItems(object arg)
+        private static IEnumerable<object> GetAllIndexerItems(object arg)
         {
             if (arg == null)
                 return Enumerable.Empty<object>(); 

@@ -5,7 +5,7 @@ namespace CSPath.Paths
 {
     public static class PathStageExtensions
     {
-        public static IEnumerable<object> Filter(this IEnumerable<IPathStage> stages, IEnumerable<object> input)
+        public static IEnumerable<object> Filter(this IEnumerable<IPath> stages, IEnumerable<object> input)
         {
             if (stages == null || input == null)
                 return Enumerable.Empty<object>();

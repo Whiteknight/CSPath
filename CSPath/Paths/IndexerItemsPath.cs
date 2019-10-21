@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Xml;
 
 namespace CSPath.Paths
 {
-    public class IndexerItemsPath : IPathStage
+    public class IndexerItemsPath : IPath
     {
         private readonly IReadOnlyList<object> _indices;
 
@@ -24,42 +22,35 @@ namespace CSPath.Paths
         private IEnumerable<object> GetItems(object item)
         {
             var type = item.GetType();
-            if (type.IsArray)
-            {
-                var array = item as Array;
+            if (type.IsArray && item is Array array)
                 return _indices.Where(i => i is int).Select(i => array.GetValue((int) i));
-            }
 
-            var a1 = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            // Get public indexers with a single parameter
+            // this list should be pretty short, most types will expose at most one or two of these
+            var indexers = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(p => p.CanRead && p.GetMethod != null)
-                .ToList()
-                ;
-
-            var a2 = a1.Select(p => new
-            {
-                Property = p,
-                IndexParameters = p.GetIndexParameters()
-            })
-            .Where(x => x.IndexParameters != null && x.IndexParameters.Length == 1)
-            .ToList();
-
-            var a3 = a2.Select(x => new
-            {
-                Property = x.Property,
-                ParameterType = x.IndexParameters.Single().ParameterType,
-            })
+                .Select(p => new
+                {
+                    Property = p,
+                    IndexParameters = p.GetIndexParameters()
+                })
+                .Where(x => x.IndexParameters != null && x.IndexParameters.Length == 1)
+                .Select(x => new
+                {
+                    Property = x.Property,
+                    ParameterType = x.IndexParameters.Single().ParameterType,
+                })
                 .ToList();
-            var indexers = a3.ToList();
-            var results = new List<object>();
-            foreach (var index in _indices)
-            {
-                var indexer = indexers.FirstOrDefault(idxr => idxr.ParameterType.IsInstanceOfType(index));
-                if (indexer == null)
-                    continue;
-                var value = indexer.Property.GetMethod.Invoke(item, new[] { index });
-                results.Add(value);
-            }
-            return results;
+
+            // foreach index, see if we have a matching indexer. If so, get the value
+            return _indices
+                .Select(idx => new
+                {
+                    Index = idx,
+                    Indexer = indexers.FirstOrDefault(idxr => idxr.ParameterType.IsInstanceOfType(idx))
+                })
+                .Where(x => x.Indexer != null)
+                .Select(x => x.Indexer.Property.GetMethod.Invoke(item, new[] { x.Index }));
         }
     }
 }

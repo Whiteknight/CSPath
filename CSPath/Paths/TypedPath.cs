@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace CSPath.Paths
 {
-    public class TypedPath : IPathStage
+    public class TypedPath : IPath
     {
         private readonly string _typeName;
         private readonly bool _isFullyQualified;
