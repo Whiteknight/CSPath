@@ -22,18 +22,24 @@ namespace CSPath.Parsing.Parsers
 
         public (bool success, TOutput value) Parse(ISequence<TInput> t)
         {
+            var items = GetItems(t);
+            return _atLeastOne && items.Count == 0 ? (false, default) : (true, _produce(items));
+        }
+
+        private List<TItem> GetItems(ISequence<TInput> t)
+        {
             var items = new List<TItem>();
             var (success, value) = _itemParser.Parse(t);
             if (!success)
-                return (false, default);
-            items.Add(value);
+                return items;
 
+            items.Add(value);
             while (true)
             {
                 (success, _) = _sepParser.Parse(t);
                 if (!success)
                     break;
-                
+
                 (success, value) = _itemParser.Parse(t);
                 if (!success)
                     throw new Exception("Incomplete separated list");
@@ -41,9 +47,7 @@ namespace CSPath.Parsing.Parsers
                 items.Add(value);
             }
 
-            if (_atLeastOne && items.Count == 0)
-                return (false, default);
-            return (true, _produce(items));
+            return items;
         }
     }
 }

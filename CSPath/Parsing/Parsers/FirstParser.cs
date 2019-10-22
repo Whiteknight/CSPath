@@ -13,9 +13,8 @@ namespace CSPath.Parsing.Parsers
 
         public (bool success, TOutput value) Parse(ISequence<TInput> t)
         {
-            for (int i = 0; i < _parsers.Count; i++)
+            foreach (var parser in _parsers)
             {
-                var parser = _parsers[i];
                 var (success, value) = parser.Parse(t);
                 if (success)
                     return (true, value);

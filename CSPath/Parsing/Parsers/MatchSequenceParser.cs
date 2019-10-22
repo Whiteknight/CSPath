@@ -17,24 +17,21 @@ namespace CSPath.Parsing.Parsers
 
         public (bool success, TOutput value) Parse(ISequence<TInput> t)
         {
+            // small optimization, don't allocate a buffer if we only need one item
             if (_find.Length == 1)
-            {
-                if (t.Peek().Equals(_find[0]))
-                    return (true,  _produce(new [] { t.GetNext() }));
-                return (false, default);
-            }
+                return t.Peek().Equals(_find[0]) ? (true, _produce(new[] { t.GetNext() })) : (false, default);
 
             var buffer = new TInput[_find.Length];
-            for (int i = 0; i < _find.Length; i++)
+            for (var i = 0; i < _find.Length; i++)
             {
                 var c = t.GetNext();
                 buffer[i] = c;
-                if (!c.Equals(_find[i]))
-                {
-                    for (; i >= 0; i--)
-                        t.PutBack(buffer[i]);
-                    return (false, default);
-                }
+                if (c.Equals(_find[i]))
+                    continue;
+
+                for (; i >= 0; i--)
+                    t.PutBack(buffer[i]);
+                return (false, default);
             }
 
             return (true, _produce(buffer));

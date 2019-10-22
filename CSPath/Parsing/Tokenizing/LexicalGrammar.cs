@@ -16,9 +16,9 @@ namespace CSPath.Parsing.Tokenizing
         {
             // identifier = (<char> | "_") (<char> | <digit> | "_")*
             var identifiers = Rule(
-                If<char>(c => char.IsLetter(c) || c == '_'),
+                Match<char>(c => char.IsLetter(c) || c == '_'),
                 List(
-                    If<char>(c => char.IsLetter(c) || char.IsDigit(c) || c == '_'),
+                    Match<char>(c => char.IsLetter(c) || char.IsDigit(c) || c == '_'),
                     c => c.ToArray()
                 ),
                 (start, rest) => new PathToken(start.ToString() + new string(rest), TokenType.Identifier)
@@ -31,16 +31,19 @@ namespace CSPath.Parsing.Tokenizing
                     // TODO: "\u" and "\U" escapes
                     Rule(
                         Match("\\x", c => c),
-                        List(If<char>(c => _hexDigits.Contains(c)), t => ((char) int.Parse(new string(t.ToArray()))).ToString()),
+                        List(
+                            Match<char>(c => _hexDigits.Contains(c)), 
+                            t => ((char) int.Parse(new string(t.ToArray()))).ToString()
+                        ),
                         (escape, c) => c
                     ),
                     Rule(
                         Match("\\", c => c),
-                        If<char>(c => c != '\0'),
+                        Match<char>(c => c != '\0'),
                         (escape, c) => c.ToString()
                     ),
-                    If<char, string>(c => c != '\'', c => c.ToString()),
-                    new ThrowExceptionParser<char, string>(t => $"Expected char value but found {t.Peek()}")
+                    Match<char, string>(c => c != '\'', c => c.ToString()),
+                    Error<char, string>(t => $"Expected char value but found {t.Peek()}")
                 ),
                 Match("'", c => c[0]),
                 (start, content, end) => new PathToken(content, TokenType.Character)
@@ -54,10 +57,10 @@ namespace CSPath.Parsing.Tokenizing
                     First(
                         Rule(
                             Match("\\", c => c[0]),
-                            If<char>(c => c != '\0'),
+                            Match<char>(c => c != '\0'),
                             (escape, c) => c.ToString()
                         ),
-                        If<char, string>(c => c != '"', c => c.ToString())
+                        Match<char, string>(c => c != '"', c => c.ToString())
                     ),
                     s => string.Join("", s)
                 ),
@@ -70,7 +73,7 @@ namespace CSPath.Parsing.Tokenizing
                 Match("\0", c => PathToken.EndOfInput()),
 
                 // Whitespace
-                List(If<char>(char.IsWhiteSpace), t => new PathToken(new string(t.ToArray()), TokenType.Whitespace), true),
+                List(Match<char>(char.IsWhiteSpace), t => new PathToken(new string(t.ToArray()), TokenType.Whitespace), true),
 
                 Match("true", c => new PathToken(null, TokenType.True)),
                 Match("false", c => new PathToken(null, TokenType.False)),
@@ -102,7 +105,7 @@ namespace CSPath.Parsing.Tokenizing
                 strings,
 
                 // If we haven't matched so far, it's an unexected character
-                new ThrowExceptionParser<char, PathToken>(t => $"Unexpected character {t.Peek()}")
+                Error<char, PathToken>(t => $"Unexpected character {t.Peek()}")
             );
         }
     }

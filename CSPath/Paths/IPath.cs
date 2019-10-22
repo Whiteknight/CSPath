@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CSPath
+namespace CSPath.Paths
 {
     public interface IPath
     {

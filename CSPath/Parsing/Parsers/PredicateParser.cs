@@ -15,9 +15,7 @@ namespace CSPath.Parsing.Parsers
 
         public (bool success, TOutput value) Parse(ISequence<TInput> t)
         {
-            if (_predicate(t.Peek()))
-                return (true, _produce(t.GetNext()));
-            return (false, default);
+            return _predicate(t.Peek()) ? (true, _produce(t.GetNext())) : (false, default);
         }
 
         public (bool success, object value) ParseUntyped(ISequence<TInput> t) => Parse(t);

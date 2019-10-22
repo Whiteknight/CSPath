@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using CSPath.Parsing.Tokenizing;
 
-namespace CSPath.Parsing.Parsers
+namespace CSPath.Parsing.Tokenizing
 {
     public class NumberParser : IParser<char, PathToken>
     {

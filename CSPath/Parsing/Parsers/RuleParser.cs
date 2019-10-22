@@ -18,7 +18,7 @@ namespace CSPath.Parsing.Parsers
         {
             var window = new WindowSequence<TInput>(t);
             var outputs = new object[_parsers.Count];
-            for (int i = 0; i < _parsers.Count; i++)
+            for (var i = 0; i < _parsers.Count; i++)
             {
                 var (success, value) = _parsers[i].ParseUntyped(window);
                 if (!success)

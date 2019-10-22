@@ -18,9 +18,7 @@ namespace CSPath.Parsing.Parsers
         public (bool success, TTransform value) Parse(ISequence<TInput> t)
         {
             var (success, value) = _parser.Parse(t);
-            if (!success)
-                return (false, default);
-            return (true, _produce(value));
+            return success ? (true, _produce(value)) : (false, default);
         }
     }
 }

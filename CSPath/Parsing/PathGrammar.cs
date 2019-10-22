@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using CSPath.Parsing.Parsers;
 using CSPath.Parsing.Tokenizing;
 using CSPath.Paths;
 using static CSPath.Parsing.Parsers.ParserMethods;
@@ -25,7 +24,8 @@ namespace CSPath.Parsing
                 Token(TokenType.UInteger, t => (object)int.Parse(t.Value)),
                 Token(TokenType.ULong, t => (object)int.Parse(t.Value)),
                 Token(TokenType.True, t => (object)true),
-                Token(TokenType.False, t => (object)false)
+                Token(TokenType.False, t => (object)false),
+                Token(TokenType.Null, t => (object)null)
             );
 
             IParser<PathToken, IReadOnlyList<IPath>> singlePath = null;
@@ -45,27 +45,13 @@ namespace CSPath.Parsing
             var indexerPaths = First(
                 Rule(
                     Token(TokenType.OpenBracket),
-                    Token(TokenType.CloseBracket),
-                    (open, close) => (IPath) new AllIndexerItemsPath()
-                ),
-                Rule(
-                    Token(TokenType.OpenBracket),
                     SeparatedList(
-                        First(
-                            primitiveValues,
-                            new ThrowExceptionParser<PathToken, object>(t => $"Unexpected token in indexer {t.Peek()}")
-                        ),
+                        primitiveValues,
                         Token(TokenType.Comma),
-                        indices => indices,
-                        atLeastOne: true
+                        indices => indices
                     ),
-                    Token(TokenType.CloseBracket),
-                    (open, indices, close) => (IPath) new IndexerItemsPath(indices)
-                ),
-                Rule(
-                    Token(TokenType.OpenBracket),
-                    new ThrowExceptionParser<PathToken, object>(t => $"Expected ']' or key, found {t.Peek()}"),
-                    (open, err) => (IPath) null
+                    Token(TokenType.CloseBracket), 
+                    (open, indices, close) => indices.Count == 0 ? (IPath)new AllIndexerItemsPath() : new IndexerItemsPath(indices)
                 )
             );
 
@@ -73,18 +59,18 @@ namespace CSPath.Parsing
             var typeConstraintPaths = Rule(
                 Token(TokenType.OpenAngle),
                 // TODO: Generic and array types
-                First(
+                Require(
                     SeparatedList(
                         Token(TokenType.Identifier),
                         Token(TokenType.Dot),
                         parts => string.Join(".", parts.Select(p => p.Value)),
                         atLeastOne: true
                     ),
-                    new ThrowExceptionParser<PathToken, string>(t => $"Unexpected token in type constraint {t.Peek()}")
+                    t => $"Unexpected token in type constraint {t.Peek()}"
                 ),
-                First(
+                Require(
                     Token(TokenType.CloseAngle),
-                    new ThrowExceptionParser<PathToken, PathToken>(t => $"Expected '>' but found {t.Peek()}")
+                    t => $"Expected '>' but found {t.Peek()}"
                 ),
                 (open, name, close) => (IPath) new TypedPath(name)
             );
@@ -96,14 +82,14 @@ namespace CSPath.Parsing
             // "{" (<property> | <indexer>) "=" ("*" | "&" | "|" | "") (<primitive> | "null")
             var predicateComparePaths = Rule(
                 Token(TokenType.OpenBrace),
-                First(
+                Require(
                     Deferred(() => singlePath),
-                    new ThrowExceptionParser<PathToken, IReadOnlyList<IPath>>(t => $"Expected path but found {t.Peek()}")
+                    t => $"Expected path but found {t.Peek()}"
                 ),
                 First(
                     // TODO: Support other equality comparisons < > <= >= !=
                     Token(TokenType.Equals),
-                    new ThrowExceptionParser<PathToken, PathToken>(t => $"Expected '=' but found {t.Peek()}")
+                    Error<PathToken, PathToken>(t => $"Expected '=' but found {t.Peek()}")
                 ),
                 First(
                     Token(TokenType.Star, t => t.Value),
@@ -113,12 +99,11 @@ namespace CSPath.Parsing
                 ),
                 First(
                     primitiveValues,
-                    Token(TokenType.Null, t => (object)null),
-                    new ThrowExceptionParser<PathToken, object>(t => $"Expected primitive value but found {t.Peek()}")
+                    Error<PathToken, object>(t => $"Expected primitive value but found {t.Peek()}")
                 ),
-                First(
+                Require(
                     Token(TokenType.CloseBrace),
-                    new ThrowExceptionParser<PathToken, PathToken>(t => $"Expected '}}' but found {t.Peek()}")
+                    t => $"Expected '}}' but found {t.Peek()}"
                 ),
                 (open, path, eq, mod, value, close) => (IPath)new PredicatePath(path, eq.Value, value, mod)
             );
@@ -144,9 +129,9 @@ namespace CSPath.Parsing
             // <concat> <EndOfInput>
             var all = Rule(
                 concatPaths,
-                First(
+                Require(
                     Token(TokenType.EndOfInput),
-                    new ThrowExceptionParser<PathToken, PathToken>(t => $"Expected EndOfInput but found {t.Peek()}")
+                    t => $"Expected EndOfInput but found {t.Peek()}"
                 ),
                 (stages, eoi) => stages
             );

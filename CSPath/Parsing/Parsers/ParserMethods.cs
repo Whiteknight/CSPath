@@ -11,6 +11,16 @@ namespace CSPath.Parsing.Parsers
             return new DeferredParser<TInput, TOutput>(getParser);
         }
 
+        public static IParser<TInput, TOutput> Error<TInput, TOutput>(string errorMessage)
+        {
+            return new ThrowExceptionParser<TInput, TOutput>(t => errorMessage);
+        }
+
+        public static IParser<TInput, TOutput> Error<TInput, TOutput>(Func<ISequence<TInput>, string> getError)
+        {
+            return new ThrowExceptionParser<TInput, TOutput>(getError);
+        }
+
         public static IParser<TInput, TOutput> First<TInput, TOutput>(params IParser<TInput, TOutput>[] parsers)
         {
             return new FirstParser<TInput, TOutput>(parsers.ToArray());
@@ -21,24 +31,40 @@ namespace CSPath.Parsing.Parsers
             return new IfParser<TInput, TOutput>(predicate, parser);
         }
 
-        public static IParser<T, T> If<T>(Func<T, bool> predicate)
-        {
-            return new PredicateParser<T, T>(predicate, t => t);
-        }
-
-        public static IParser<TInput, TOutput> If<TInput, TOutput>(Func<TInput, bool> predicate, Func<TInput, TOutput> produce)
-        {
-            return new PredicateParser<TInput, TOutput>(predicate, produce);
-        }
-
         public static IParser<TInput, TOutput> List<TInput, TItem, TOutput>(IParser<TInput, TItem> parser, Func<IReadOnlyList<TItem>, TOutput> produce, bool atLeastOne = false)
         {
             return new ListParser<TInput, TItem, TOutput>(parser, produce, atLeastOne);
         }
 
+        public static IParser<T, T> Match<T>(Func<T, bool> predicate)
+        {
+            return new PredicateParser<T, T>(predicate, t => t);
+        }
+
+        public static IParser<TInput, TOutput> Match<TInput, TOutput>(Func<TInput, bool> predicate, Func<TInput, TOutput> produce)
+        {
+            return new PredicateParser<TInput, TOutput>(predicate, produce);
+        }
+
         public static IParser<TInput, TOutput> Produce<TInput, TOutput>(Func<TOutput> produce)
         {
             return new ProduceParser<TInput, TOutput>(produce);
+        }
+
+        public static IParser<TInput, TOutput> Require<TInput, TOutput>(IParser<TInput, TOutput> parser, string errorMessage)
+        {
+            return First(
+                parser,
+                Error<TInput, TOutput>(errorMessage)
+            );
+        }
+
+        public static IParser<TInput, TOutput> Require<TInput, TOutput>(IParser<TInput, TOutput> parser, Func<ISequence<TInput>, string> getErrorMessage)
+        {
+            return First(
+                parser,
+                Error<TInput, TOutput>(getErrorMessage)
+            );
         }
 
         public static IParser<TInput, TOutput> Rule<TInput, T1, T2, TOutput>(IParser<TInput, T1> p1, IParser<TInput, T2> p2, Func<T1, T2, TOutput> produce)

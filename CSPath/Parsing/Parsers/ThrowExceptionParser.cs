@@ -11,14 +11,8 @@ namespace CSPath.Parsing.Parsers
             _getError = getError;
         }
 
-        public (bool success, TOutput value) Parse(ISequence<TInput> t)
-        {
-            throw new Exception(_getError(t));
-        }
+        public (bool success, TOutput value) Parse(ISequence<TInput> t) => throw new Exception(_getError(t));
 
-        public (bool success, object value) ParseUntyped(ISequence<TInput> t)
-        {
-            throw new Exception(_getError(t));
-        }
+        public (bool success, object value) ParseUntyped(ISequence<TInput> t) => throw new Exception(_getError(t));
     }
 }
