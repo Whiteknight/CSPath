@@ -20,6 +20,10 @@ namespace CSPath.Parsing
             _inner.PutBack(t);
         }
 
+        public T Peek() => _inner.Peek();
+
+        public bool IsAtEnd => _inner.IsAtEnd;
+
         public T GetNext()
         {
             var token = _inner.GetNext();

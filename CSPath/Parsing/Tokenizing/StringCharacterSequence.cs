@@ -27,5 +27,16 @@ namespace CSPath.Parsing.Tokenizing
         }
 
         public void PutBack(char c) => _putbacks.Push(c);
+
+        public char Peek()
+        {
+            if (_putbacks.Count > 0)
+                return _putbacks.Peek();
+            if (IsAtEnd)
+                return '\0';
+            return _s[_index];
+        }
+
+        public bool IsAtEnd => _index >= _s.Length && _putbacks.Count == 0;
     }
 }

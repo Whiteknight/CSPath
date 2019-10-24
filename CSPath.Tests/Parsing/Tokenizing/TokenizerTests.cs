@@ -2,7 +2,7 @@ using CSPath.Parsing.Tokenizing;
 using FluentAssertions;
 using NUnit.Framework;
 
-namespace CSPath.Tests.Tokenizing
+namespace CSPath.Tests.Parsing.Tokenizing
 {
     public class TokenizerTests
     {

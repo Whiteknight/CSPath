@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using CSPath.Parsing.Parsers;
 using CSPath.Parsing.Tokenizing;
 

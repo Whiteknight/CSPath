@@ -167,12 +167,9 @@ namespace CSPath.Parsing.Tokenizing
                 (start, body, end) => new PathToken(body, TokenType.String)
             );
 
-            return First(
+            var allItems = First(
                 // input char sequence returns "\0" for end-of-input. Detect that and return an EOI token
                 Match("\0", c => PathToken.EndOfInput()),
-
-                // Whitespace
-                List(Match<char>(char.IsWhiteSpace), t => new PathToken(new string(t.ToArray()), TokenType.Whitespace), true),
 
                 Match("true", c => new PathToken(null, TokenType.True)),
                 Match("false", c => new PathToken(null, TokenType.False)),
@@ -205,6 +202,12 @@ namespace CSPath.Parsing.Tokenizing
 
                 // If we haven't matched so far, it's an unexected character
                 Error<char, PathToken>(t => $"Unexpected character {t.Peek()}")
+            );
+
+            return Rule(
+                List(Match<char>(char.IsWhiteSpace), t => (object)null),
+                allItems,
+                (ws, item) => item
             );
         }
     }

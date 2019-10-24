@@ -9,6 +9,8 @@ namespace CSPath.Parsing.Tokenizing
         private readonly Stack<PathToken> _putbacks;
         private readonly IParser<char, PathToken> _scanner;
 
+        private bool _seenEnd;
+
         public Tokenizer(string s)
             : this(new StringCharacterSequence(s ?? ""))
         {
@@ -21,6 +23,7 @@ namespace CSPath.Parsing.Tokenizing
 
             // TODO: Inject this
             _scanner = LexicalGrammar.GetParser();
+            _seenEnd = false;
         }
 
         public PathToken GetNext()
@@ -28,13 +31,17 @@ namespace CSPath.Parsing.Tokenizing
             if (_putbacks.Count > 0)
                 return _putbacks.Pop();
 
+            if (_seenEnd)
+                return PathToken.EndOfInput();
+
             while (true)
             {
                 var (success, value) = _scanner.Parse(_chars);
                 if (!success || value == null)
+                {
+                    _seenEnd = true;
                     return PathToken.EndOfInput();
-                if (value.IsType(TokenType.Whitespace))
-                    continue;
+                }
                 return value;
             }
         }
@@ -44,6 +51,20 @@ namespace CSPath.Parsing.Tokenizing
             if (pathToken != null)
                 _putbacks.Push(pathToken);
         }
+
+        public PathToken Peek()
+        {
+            if (_putbacks.Count > 0)
+                return _putbacks.Peek();
+            if (_seenEnd)
+                return PathToken.EndOfInput();
+
+            var next = GetNext();
+            PutBack(next);
+            return next;
+        }
+
+        public bool IsAtEnd => _seenEnd && _putbacks.Count == 0;
 
         public IEnumerator<PathToken> GetEnumerator()
         {
