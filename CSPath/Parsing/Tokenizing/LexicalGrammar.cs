@@ -19,7 +19,7 @@ namespace CSPath.Parsing.Tokenizing
                 Rule(
                     Match("0x", c => c),
                     List(
-                        Match<char>(c => _hexDigits.Contains(c)), 
+                        Match<char>(c => _hexDigits.Contains(c)),
                         c => new string(c.ToArray()),
                         atLeastOne: true
                     ),
@@ -80,45 +80,90 @@ namespace CSPath.Parsing.Tokenizing
 
             // chars = "'" ("\" "x" <hexdigit>+ | "\" . | .) "'"
             var chars = Rule(
-                Match("'", c => c[0]),
+                Match<char>(c => c == '\''),
                 First(
-                    // TODO: "\u" and "\U" escapes
                     Rule(
-                        Match("\\x", c => c),
+                        Match<char>(c => c == '\\'),
+                        Match<char>(c => c == 'x'),
                         List(
-                            Match<char>(c => _hexDigits.Contains(c)), 
-                            t => ((char) int.Parse(new string(t.ToArray()))).ToString()
+                            // TODO: 1-4 of these only
+                            Match<char>(c => _hexDigits.Contains(c)),
+                            t => (char) int.Parse(new string(t.ToArray()))
                         ),
-                        (escape, c) => c
+                        (slash, x, c) => c
                     ),
                     Rule(
-                        Match("\\", c => c),
-                        Match<char>(c => c != '\0'),
-                        (escape, c) => c.ToString()
+                        Match<char>(c => c == '\\'),
+                        Match<char>(c => c == 'u'),
+                        List(
+                            // TODO: 1-4 of these or exactly-4 of these?
+                            Match<char>(c => _hexDigits.Contains(c)),
+                            t => char.ConvertFromUtf32(int.Parse(new string(t.ToArray())))[0]
+                        ),
+                        (slash, u, c) => c
                     ),
-                    Match<char, string>(c => c != '\'', c => c.ToString()),
-                    Error<char, string>(t => $"Expected char value but found {t.Peek()}")
+                    Rule(
+                        Match<char>(c => c == '\\'),
+                        Match<char>(c => "abfnrtv\\'\"0".Contains(c)),
+                        (slash, c) => c
+                    ),
+                    Match<char>(c => c != '\0'),
+                    Error<char, char>(t => $"Expected char value but found {t.Peek()}")
                 ),
-                Match("'", c => c[0]),
-                (start, content, end) => new PathToken(content, TokenType.Character)
+                First(
+                    Match<char>(c => c == '\''),
+                    Error<char, char>(t => $"Expected end singlequote but found {t.Peek()}")
+                ),
+                (start, content, end) => new PathToken(content.ToString(), TokenType.Character)
             );
 
-            // TODO: Do we want to support @ strings?
-            // strings = """ ("\" . | .)* """
+            // strings = """ (<hexSequence> | <uSequence> | <escapedChar> | .)* """
             var strings = Rule(
                 Match("\"", c => c[0]),
                 List(
                     First(
                         Rule(
                             Match("\\", c => c[0]),
-                            Match<char>(c => c != '\0'),
-                            (escape, c) => c.ToString()
+                            Match<char>(c => c == 'x'),
+                            List(
+                                Match<char>(c => _hexDigits.Contains(c)),
+                                t => (char)int.Parse(new string(t.ToArray()))
+                            ),
+                            (slash, escape, c) => c.ToString()
                         ),
-                        Match<char, string>(c => c != '"', c => c.ToString())
+                        Rule(
+                            Match("\\", c => c[0]),
+                            Match<char>(c => c == 'u'),
+                            List(
+                                // TODO: 1-4 of these or exactly-4?
+                                Match<char>(c => _hexDigits.Contains(c)),
+                                t => char.ConvertFromUtf32(int.Parse(new string(t.ToArray())))
+                            ),
+                            (slash, escape, c) => c
+                        ),
+                        Rule(
+                            Match("\\", c => c[0]),
+                            Match<char>(c => c == 'U'),
+                            List(
+                                // TODO: 1-8 of these or exactly 8?
+                                Match<char>(c => _hexDigits.Contains(c)),
+                                t => char.ConvertFromUtf32(int.Parse(new string(t.ToArray())))
+                            ),
+                            (slash, escape, c) => c
+                        ),
+                        Rule(
+                            Match("\\", c => c[0]),
+                            Match<char, string>(c => "abfnrtv\\'\"0".Contains(c), c => c.ToString()),
+                            (slash, c) => c
+                        ),
+                        Match<char, string>(c => c != '\0' && c != '"', c => c.ToString())
                     ),
                     s => string.Join("", s)
                 ),
-                Match("\"", c => c[0]),
+                First(
+                    Match("\"", c => c[0]),
+                    Error<char, char>(t => $"Expected end doublequote but found {t.Peek()}")
+                ),
                 (start, body, end) => new PathToken(body, TokenType.String)
             );
 
