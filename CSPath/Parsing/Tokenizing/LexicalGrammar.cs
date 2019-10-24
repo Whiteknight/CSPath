@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using CSPath.Parsing.Parsers;
 using static CSPath.Parsing.Parsers.ParserMethods;
 using static CSPath.Parsing.Tokenizing.TokenizerMethods;
 
@@ -14,6 +13,61 @@ namespace CSPath.Parsing.Tokenizing
 
         public static IParser<char, PathToken> GetParser()
         {
+            // TODO: "_" separator in a number
+            // "0x" <hexDigit>+ | "-"? <digit>+ "." <digit>+ <type>? | "-"? <digit>+ <type>?
+            var numbers = First(
+                Rule(
+                    Match("0x", c => c),
+                    List(
+                        Match<char>(c => _hexDigits.Contains(c)), 
+                        c => new string(c.ToArray()),
+                        atLeastOne: true
+                    ),
+                    First(
+                        Match("UL", c => TokenType.ULong),
+                        Match("U", c => TokenType.UInteger),
+                        Match("L", c => TokenType.Long),
+                        Produce<char, TokenType>(() => TokenType.Integer)
+                    ),
+                    (prefix, body, type) => new PathToken(int.Parse(body, System.Globalization.NumberStyles.HexNumber).ToString(), type)
+                ),
+                Rule(
+                    Optional(Match("-", c => "-"), () => ""),
+                    List(
+                        Match<char>(char.IsDigit),
+                        c => new string(c.ToArray()),
+                        atLeastOne: true
+                    ),
+                    Match(".", c => "."),
+                    List(
+                        Match<char>(char.IsDigit),
+                        c => new string(c.ToArray()),
+                        atLeastOne: true
+                    ),
+                    First(
+                        Match("F", c => TokenType.Float),
+                        Match("M", c => TokenType.Decimal),
+                        Produce<char, TokenType>(() => TokenType.Double)
+                    ),
+                    (neg, whole, dot, fract, type) => new PathToken(neg + whole + "." + fract, type)
+                ),
+                Rule(
+                    Optional(Match("-", c => "-"), () => ""),
+                    List(
+                        Match<char>(char.IsDigit),
+                        c => new string(c.ToArray()),
+                        atLeastOne: true
+                    ),
+                    First(
+                        Match("UL", c => TokenType.ULong),
+                        Match("U", c => TokenType.UInteger),
+                        Match("L", c => TokenType.Long),
+                        Produce<char, TokenType>(() => TokenType.Integer)
+                    ),
+                    (neg, whole, type) => new PathToken(neg + whole, type)
+                )
+            );
+
             // identifier = (<char> | "_") (<char> | <digit> | "_")*
             var identifiers = Rule(
                 Match<char>(c => char.IsLetter(c) || c == '_'),
@@ -100,7 +154,7 @@ namespace CSPath.Parsing.Tokenizing
                 Match("+", c => new PathToken(new string(c), TokenType.Plus)),
 
                 // Primitive values, numbers, chars, strings
-                If(t => char.IsNumber(t.Peek()) || t.Peek() == '-', new NumberParser()),
+                numbers,
                 chars,
                 strings,
 

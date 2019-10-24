@@ -46,6 +46,11 @@ namespace CSPath.Parsing.Parsers
             return new PredicateParser<TInput, TOutput>(predicate, produce);
         }
 
+        public static IParser<TInput, TOutput> Optional<TInput, TOutput>(IParser<TInput, TOutput> parser, Func<TOutput> getDefault = null)
+        {
+            return new OptionalParser<TInput, TOutput>(parser, getDefault);
+        }
+
         public static IParser<TInput, TOutput> Produce<TInput, TOutput>(Func<TOutput> produce)
         {
             return new ProduceParser<TInput, TOutput>(produce);
