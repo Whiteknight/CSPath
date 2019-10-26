@@ -27,7 +27,6 @@ namespace CSPath.Tests
             var target = new TestClass1();
             var result = target.Path(".<System.String>").ToList();
             result.Should().BeEquivalentTo(new [] {"test"});
-
         }
     }
 }

@@ -46,5 +46,14 @@ namespace CSPath.Tests
         {
             new TestClass2().Path(".Value.StringValue").Single().Should().Be("test");
         }
+
+        [Test]
+        public void Path_ChildProperty_Multiline()
+        {
+            new TestClass2().Path(@"
+                .Value
+                .StringValue
+            ").Single().Should().Be("test");
+        }
     }
 }

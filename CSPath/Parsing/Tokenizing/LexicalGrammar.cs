@@ -13,60 +13,7 @@ namespace CSPath.Parsing.Tokenizing
 
         public static IParser<char, PathToken> GetParser()
         {
-            // TODO: "_" separator in a number
-            // "0x" <hexDigit>+ | "-"? <digit>+ "." <digit>+ <type>? | "-"? <digit>+ <type>?
-            var numbers = First(
-                Rule(
-                    Match("0x", c => c),
-                    List(
-                        Match<char>(c => _hexDigits.Contains(c)),
-                        c => new string(c.ToArray()),
-                        atLeastOne: true
-                    ),
-                    First(
-                        Match("UL", c => TokenType.ULong),
-                        Match("U", c => TokenType.UInteger),
-                        Match("L", c => TokenType.Long),
-                        Produce<char, TokenType>(() => TokenType.Integer)
-                    ),
-                    (prefix, body, type) => new PathToken(int.Parse(body, System.Globalization.NumberStyles.HexNumber).ToString(), type)
-                ),
-                Rule(
-                    Optional(Match("-", c => "-"), () => ""),
-                    List(
-                        Match<char>(char.IsDigit),
-                        c => new string(c.ToArray()),
-                        atLeastOne: true
-                    ),
-                    Match(".", c => "."),
-                    List(
-                        Match<char>(char.IsDigit),
-                        c => new string(c.ToArray()),
-                        atLeastOne: true
-                    ),
-                    First(
-                        Match("F", c => TokenType.Float),
-                        Match("M", c => TokenType.Decimal),
-                        Produce<char, TokenType>(() => TokenType.Double)
-                    ),
-                    (neg, whole, dot, fract, type) => new PathToken(neg + whole + "." + fract, type)
-                ),
-                Rule(
-                    Optional(Match("-", c => "-"), () => ""),
-                    List(
-                        Match<char>(char.IsDigit),
-                        c => new string(c.ToArray()),
-                        atLeastOne: true
-                    ),
-                    First(
-                        Match("UL", c => TokenType.ULong),
-                        Match("U", c => TokenType.UInteger),
-                        Match("L", c => TokenType.Long),
-                        Produce<char, TokenType>(() => TokenType.Integer)
-                    ),
-                    (neg, whole, type) => new PathToken(neg + whole, type)
-                )
-            );
+            var numbers = BuildNumberParser();
 
             // identifier = (<char> | "_") (<char> | <digit> | "_")*
             var identifiers = Rule(
@@ -78,94 +25,9 @@ namespace CSPath.Parsing.Tokenizing
                 (start, rest) => new PathToken(start.ToString() + new string(rest), TokenType.Identifier)
             );
 
-            // chars = "'" ("\" "x" <hexdigit>+ | "\" . | .) "'"
-            var chars = Rule(
-                Match<char>(c => c == '\''),
-                First(
-                    Rule(
-                        Match<char>(c => c == '\\'),
-                        Match<char>(c => c == 'x'),
-                        List(
-                            // TODO: 1-4 of these only
-                            Match<char>(c => _hexDigits.Contains(c)),
-                            t => (char) int.Parse(new string(t.ToArray()))
-                        ),
-                        (slash, x, c) => c
-                    ),
-                    Rule(
-                        Match<char>(c => c == '\\'),
-                        Match<char>(c => c == 'u'),
-                        List(
-                            // TODO: 1-4 of these or exactly-4 of these?
-                            Match<char>(c => _hexDigits.Contains(c)),
-                            t => char.ConvertFromUtf32(int.Parse(new string(t.ToArray())))[0]
-                        ),
-                        (slash, u, c) => c
-                    ),
-                    Rule(
-                        Match<char>(c => c == '\\'),
-                        Match<char>(c => "abfnrtv\\'\"0".Contains(c)),
-                        (slash, c) => c
-                    ),
-                    Match<char>(c => c != '\0'),
-                    Error<char, char>(t => $"Expected char value but found {t.Peek()}")
-                ),
-                First(
-                    Match<char>(c => c == '\''),
-                    Error<char, char>(t => $"Expected end singlequote but found {t.Peek()}")
-                ),
-                (start, content, end) => new PathToken(content.ToString(), TokenType.Character)
-            );
+            var chars = BuildCharacterLiteralParser();
 
-            // strings = """ (<hexSequence> | <uSequence> | <escapedChar> | .)* """
-            var strings = Rule(
-                Match("\"", c => c[0]),
-                List(
-                    First(
-                        Rule(
-                            Match("\\", c => c[0]),
-                            Match<char>(c => c == 'x'),
-                            List(
-                                Match<char>(c => _hexDigits.Contains(c)),
-                                t => (char)int.Parse(new string(t.ToArray()))
-                            ),
-                            (slash, escape, c) => c.ToString()
-                        ),
-                        Rule(
-                            Match("\\", c => c[0]),
-                            Match<char>(c => c == 'u'),
-                            List(
-                                // TODO: 1-4 of these or exactly-4?
-                                Match<char>(c => _hexDigits.Contains(c)),
-                                t => char.ConvertFromUtf32(int.Parse(new string(t.ToArray())))
-                            ),
-                            (slash, escape, c) => c
-                        ),
-                        Rule(
-                            Match("\\", c => c[0]),
-                            Match<char>(c => c == 'U'),
-                            List(
-                                // TODO: 1-8 of these or exactly 8?
-                                Match<char>(c => _hexDigits.Contains(c)),
-                                t => char.ConvertFromUtf32(int.Parse(new string(t.ToArray())))
-                            ),
-                            (slash, escape, c) => c
-                        ),
-                        Rule(
-                            Match("\\", c => c[0]),
-                            Match<char, string>(c => "abfnrtv\\'\"0".Contains(c), c => c.ToString()),
-                            (slash, c) => c
-                        ),
-                        Match<char, string>(c => c != '\0' && c != '"', c => c.ToString())
-                    ),
-                    s => string.Join("", s)
-                ),
-                First(
-                    Match("\"", c => c[0]),
-                    Error<char, char>(t => $"Expected end doublequote but found {t.Peek()}")
-                ),
-                (start, body, end) => new PathToken(body, TokenType.String)
-            );
+            var strings = BuildStringParser();
 
             var allItems = First(
                 // input char sequence returns "\0" for end-of-input. Detect that and return an EOI token
@@ -209,6 +71,175 @@ namespace CSPath.Parsing.Tokenizing
                 allItems,
                 (ws, item) => item
             );
+        }
+
+        private static IParser<char, PathToken> BuildStringParser()
+        {
+            var hexCharLiterals = Rule(
+                Match("\\", c => c[0]),
+                Match<char>(c => c == 'x'),
+                List(
+                    Match<char>(c => _hexDigits.Contains(c)),
+                    t => (char) int.Parse(new string(t.ToArray()))
+                ),
+                (slash, escape, c) => c.ToString()
+            );
+            var utf16CharLiterals = Rule(
+                Match("\\", c => c[0]),
+                Match<char>(c => c == 'u'),
+                List(
+                    // TODO: 1-4 of these or exactly-4?
+                    Match<char>(c => _hexDigits.Contains(c)),
+                    t => char.ConvertFromUtf32(int.Parse(new string(t.ToArray())))
+                ),
+                (slash, escape, c) => c
+            );
+            var utf32CharLiterals = Rule(
+                Match("\\", c => c[0]),
+                Match<char>(c => c == 'U'),
+                List(
+                    // TODO: 1-8 of these or exactly 8?
+                    Match<char>(c => _hexDigits.Contains(c)),
+                    t => char.ConvertFromUtf32(int.Parse(new string(t.ToArray())))
+                ),
+                (slash, escape, c) => c
+            );
+            var escapeChars = Rule(
+                Match("\\", c => c[0]),
+                Match<char, string>(c => "abfnrtv\\'\"0".Contains(c), c => c.ToString()),
+                (slash, c) => c
+            );
+
+            // strings = """ (<hexSequence> | <utf16Char> | <utf32Char> | <escapedChar> | .)* """
+            var strings = Rule(
+                Match("\"", c => c[0]),
+                List(
+                    First(
+                        hexCharLiterals,
+                        utf16CharLiterals,
+                        utf32CharLiterals,
+                        escapeChars,
+                        Match<char, string>(c => c != '\0' && c != '"', c => c.ToString())
+                    ),
+                    s => string.Join("", s)
+                ),
+                First(
+                    Match("\"", c => c[0]),
+                    Error<char, char>(t => $"Expected end doublequote but found {t.Peek()}")
+                ),
+                (start, body, end) => new PathToken(body, TokenType.String)
+            );
+            return strings;
+        }
+
+        private static IParser<char, PathToken> BuildCharacterLiteralParser()
+        {
+            var hexCharLiterals = Rule(
+                Match<char>(c => c == '\\'),
+                Match<char>(c => c == 'x'),
+                List(
+                    // TODO: 1-4 of these only
+                    Match<char>(c => _hexDigits.Contains(c)),
+                    t => (char) int.Parse(new string(t.ToArray()))
+                ),
+                (slash, x, c) => c
+            );
+            var unicodeCharLiterals = Rule(
+                Match<char>(c => c == '\\'),
+                Match<char>(c => c == 'u'),
+                List(
+                    // TODO: 1-4 of these or exactly-4 of these?
+                    Match<char>(c => _hexDigits.Contains(c)),
+                    t => char.ConvertFromUtf32(int.Parse(new string(t.ToArray())))[0]
+                ),
+                (slash, u, c) => c
+            );
+            var escapeChars = Rule(
+                Match<char>(c => c == '\\'),
+                Match<char>(c => "abfnrtv\\'\"0".Contains(c)),
+                (slash, c) => c
+            );
+
+            // chars = "'" ("\" "x" <hexdigit>+ | "\" . | .) "'"
+            var chars = Rule(
+                Match<char>(c => c == '\''),
+                First(
+                    hexCharLiterals,
+                    unicodeCharLiterals,
+                    escapeChars,
+                    Match<char>(c => c != '\0' && c != '\''),
+                    Error<char, char>(t => $"Expected char value but found {t.Peek()}")
+                ),
+                First(
+                    Match<char>(c => c == '\''),
+                    Error<char, char>(t => $"Expected end singlequote but found {t.Peek()}")
+                ),
+                (start, content, end) => new PathToken(content.ToString(), TokenType.Character)
+            );
+            return chars;
+        }
+
+        private static IParser<char, PathToken> BuildNumberParser()
+        {
+            // TODO: "_" separator in a number
+            // "0x" <hexDigit>+ | "-"? <digit>+ "." <digit>+ <type>? | "-"? <digit>+ <type>?
+            var hexLiterals = Rule(
+                Match("0x", c => c),
+                List(
+                    Match<char>(c => _hexDigits.Contains(c)),
+                    c => new string(c.ToArray()),
+                    atLeastOne: true
+                ),
+                First(
+                    Match("UL", c => TokenType.ULong),
+                    Match("U", c => TokenType.UInteger),
+                    Match("L", c => TokenType.Long),
+                    Produce<char, TokenType>(() => TokenType.Integer)
+                ),
+                (prefix, body, type) => new PathToken(int.Parse(body, System.Globalization.NumberStyles.HexNumber).ToString(), type)
+            );
+            var dottedNumbers = Rule(
+                Optional(Match("-", c => "-"), () => ""),
+                List(
+                    Match<char>(char.IsDigit),
+                    c => new string(c.ToArray()),
+                    atLeastOne: true
+                ),
+                Match(".", c => "."),
+                List(
+                    Match<char>(char.IsDigit),
+                    c => new string(c.ToArray()),
+                    atLeastOne: true
+                ),
+                First(
+                    Match("F", c => TokenType.Float),
+                    Match("M", c => TokenType.Decimal),
+                    Produce<char, TokenType>(() => TokenType.Double)
+                ),
+                (neg, whole, dot, fract, type) => new PathToken(neg + whole + "." + fract, type)
+            );
+            var integralNumbers = Rule(
+                Optional(Match("-", c => "-"), () => ""),
+                List(
+                    Match<char>(char.IsDigit),
+                    c => new string(c.ToArray()),
+                    atLeastOne: true
+                ),
+                First(
+                    Match("UL", c => TokenType.ULong),
+                    Match("U", c => TokenType.UInteger),
+                    Match("L", c => TokenType.Long),
+                    Produce<char, TokenType>(() => TokenType.Integer)
+                ),
+                (neg, whole, type) => new PathToken(neg + whole, type)
+            );
+
+            var numbers = First(
+                hexLiterals,
+                dottedNumbers,
+                integralNumbers
+            );
+            return numbers;
         }
     }
 }
