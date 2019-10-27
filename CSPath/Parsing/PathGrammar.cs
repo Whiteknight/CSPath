@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using CSPath.Parsing.Tokenizing;
 using CSPath.Paths;
@@ -9,7 +10,8 @@ namespace CSPath.Parsing
 {
     public static class PathGrammar
     {
-        // TODO: Static instance of IParser so we only need to build it once
+        private static readonly Lazy<IParser<PathToken, IReadOnlyList<IPath>>> _instance = new Lazy<IParser<PathToken, IReadOnlyList<IPath>>>(GetParser);
+        public static IParser<PathToken, IReadOnlyList<IPath>> DefaultInstance => _instance.Value;
 
         public static IParser<PathToken, IReadOnlyList<IPath>> GetParser()
         {

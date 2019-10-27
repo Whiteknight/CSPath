@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using static CSPath.Parsing.Parsers.ParserMethods;
 using static CSPath.Parsing.Tokenizing.TokenizerMethods;
@@ -7,7 +8,8 @@ namespace CSPath.Parsing.Tokenizing
 {
     public static class LexicalGrammar
     {
-        // TODO: Static instance of IParser so we only need to build it once
+        private static readonly Lazy<IParser<char, PathToken>> _instance = new Lazy<IParser<char, PathToken>>(GetParser);
+        public static IParser<char, PathToken> DefaultInstance => _instance.Value;
 
         private static readonly HashSet<char> _hexDigits = new HashSet<char>("abcdefABCDEF0123456789");
 

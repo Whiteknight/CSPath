@@ -12,17 +12,17 @@ namespace CSPath.Parsing.Tokenizing
         private bool _seenEnd;
 
         public Tokenizer(string s)
-            : this(new StringCharacterSequence(s ?? ""))
+            : this(new StringCharacterSequence(s ?? ""), null)
         {
         }
 
-        public Tokenizer(ISequence<char> chars)
+        public Tokenizer(ISequence<char> chars, IParser<char, PathToken> parser)
         {
             _chars = chars;
             _putbacks = new Stack<PathToken>();
 
             // TODO: Inject this
-            _scanner = LexicalGrammar.GetParser();
+            _scanner = parser ?? LexicalGrammar.GetParser();
             _seenEnd = false;
         }
 
