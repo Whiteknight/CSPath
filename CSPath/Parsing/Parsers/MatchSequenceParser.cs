@@ -15,11 +15,11 @@ namespace CSPath.Parsing.Parsers
             _produce = produce;
         }
 
-        public (bool success, TOutput value) Parse(ISequence<TInput> t)
+        public IParseResult<TOutput> Parse(ISequence<TInput> t)
         {
             // small optimization, don't allocate a buffer if we only need one item
             if (_find.Length == 1)
-                return t.Peek().Equals(_find[0]) ? (true, _produce(new[] { t.GetNext() })) : (false, default);
+                return t.Peek().Equals(_find[0]) ? new Result<TOutput>(true, _produce(new[] { t.GetNext() })) : Result<TOutput>.Fail();
 
             var buffer = new TInput[_find.Length];
             for (var i = 0; i < _find.Length; i++)
@@ -31,12 +31,12 @@ namespace CSPath.Parsing.Parsers
 
                 for (; i >= 0; i--)
                     t.PutBack(buffer[i]);
-                return (false, default);
+                return Result<TOutput>.Fail();
             }
 
-            return (true, _produce(buffer));
+            return new Result<TOutput>(true, _produce(buffer));
         }
 
-        public (bool success, object value) ParseUntyped(ISequence<TInput> t) => Parse(t);
+        public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();
     }
 }

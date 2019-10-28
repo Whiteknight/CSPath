@@ -18,33 +18,33 @@ namespace CSPath.Parsing.Parsers
             _atLeastOne = atLeastOne;
         }
 
-        public (bool success, object value) ParseUntyped(ISequence<TInput> t) => Parse(t);
+        public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();
 
-        public (bool success, TOutput value) Parse(ISequence<TInput> t)
+        public IParseResult<TOutput> Parse(ISequence<TInput> t)
         {
             var items = GetItems(t);
-            return _atLeastOne && items.Count == 0 ? (false, default) : (true, _produce(items));
+            return _atLeastOne && items.Count == 0 ? Result<TOutput>.Fail() : new Result<TOutput>(true, _produce(items));
         }
 
         private List<TItem> GetItems(ISequence<TInput> t)
         {
             var items = new List<TItem>();
-            var (success, value) = _itemParser.Parse(t);
-            if (!success)
+            var result = _itemParser.Parse(t);
+            if (!result.Success)
                 return items;
 
-            items.Add(value);
+            items.Add(result.Value);
             while (true)
             {
-                (success, _) = _sepParser.Parse(t);
-                if (!success)
+                var separatorResult = _sepParser.Parse(t);
+                if (!separatorResult.Success)
                     break;
 
-                (success, value) = _itemParser.Parse(t);
-                if (!success)
+                var nextResult = _itemParser.Parse(t);
+                if (!nextResult.Success)
                     throw new Exception("Incomplete separated list");
 
-                items.Add(value);
+                items.Add(nextResult.Value);
             }
 
             return items;

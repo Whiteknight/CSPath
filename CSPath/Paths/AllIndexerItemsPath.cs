@@ -11,14 +11,7 @@ namespace CSPath.Paths
             return input.SelectMany(GetAllIndexerItems);
         }
 
-        private static IEnumerable<object> GetAllIndexerItems(object arg)
-        {
-            if (arg == null)
-                return Enumerable.Empty<object>(); 
-            var type = arg.GetType();
-            if (typeof(IEnumerable).IsAssignableFrom(type))
-                return ((IEnumerable) arg).Cast<object>();
-            return Enumerable.Empty<object>();
-        }
+        private static IEnumerable<object> GetAllIndexerItems(object arg) 
+            => arg is IEnumerable enumerable ? enumerable.Cast<object>() : Enumerable.Empty<object>();
     }
 }

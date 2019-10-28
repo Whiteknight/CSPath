@@ -11,18 +11,18 @@ namespace CSPath.Parsing.Parsers
             _parsers = parsers;
         }
 
-        public (bool success, TOutput value) Parse(ISequence<TInput> t)
+        public IParseResult<TOutput> Parse(ISequence<TInput> t)
         {
             foreach (var parser in _parsers)
             {
-                var (success, value) = parser.Parse(t);
-                if (success)
-                    return (true, value);
+                var result = parser.Parse(t);
+                if (result.Success)
+                    return result;
             }
 
-            return (false, default);
+            return Result<TOutput>.Fail();
         }
 
-        public (bool success, object value) ParseUntyped(ISequence<TInput> t) => Parse(t);
+        public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();
     }
 }

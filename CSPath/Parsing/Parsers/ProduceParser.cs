@@ -11,8 +11,8 @@ namespace CSPath.Parsing.Parsers
             _produce = produce;
         }
 
-        public (bool success, object value) ParseUntyped(ISequence<TInput> t) => Parse(t);
+        public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();
 
-        public (bool success, TOutput value) Parse(ISequence<TInput> t) => (true, _produce());
+        public IParseResult<TOutput> Parse(ISequence<TInput> t) => new Result<TOutput>(true, _produce());
     }
 }

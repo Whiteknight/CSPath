@@ -24,7 +24,7 @@ namespace CSPath.Parsing.Tokenizing
                     Match<char>(c => char.IsLetter(c) || char.IsDigit(c) || c == '_'),
                     c => c.ToArray()
                 ),
-                (start, rest) => new PathToken(start.ToString() + new string(rest), TokenType.Identifier)
+                (start, rest) => new PathToken(start + new string(rest), TokenType.Identifier)
             );
 
             var chars = BuildCharacterLiteralParser();
@@ -35,9 +35,11 @@ namespace CSPath.Parsing.Tokenizing
                 // input char sequence returns "\0" for end-of-input. Detect that and return an EOI token
                 Match("\0", c => PathToken.EndOfInput()),
 
+                // Keywords
                 Match("true", c => new PathToken(null, TokenType.True)),
                 Match("false", c => new PathToken(null, TokenType.False)),
                 Match("null", c => new PathToken(null, TokenType.Null)),
+
                 // Identifiers and names
                 identifiers,
 

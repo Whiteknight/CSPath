@@ -20,16 +20,16 @@ namespace CSPath.Parsing
             _parser = parser ?? PathGrammar.DefaultInstance;
         }
 
-        (bool success, object value) IParser<char>.ParseUntyped(ISequence<char> t) 
+        IParseResult<object> IParser<char>.ParseUntyped(ISequence<char> t) 
             => _parser.Parse(new Tokenizer(t, _lexer));
 
-        (bool success, IReadOnlyList<IPath> value) IParser<char, IReadOnlyList<IPath>>.Parse(ISequence<char> t) 
+        IParseResult<IReadOnlyList<IPath>> IParser<char, IReadOnlyList<IPath>>.Parse(ISequence<char> t) 
             => _parser.Parse(new Tokenizer(t, _lexer));
 
-        (bool success, object value) IParser<PathToken>.ParseUntyped(ISequence<PathToken> t) 
+        IParseResult<object> IParser<PathToken>.ParseUntyped(ISequence<PathToken> t) 
             => _parser.Parse(t);
 
-        (bool success, IReadOnlyList<IPath> value) IParser<PathToken, IReadOnlyList<IPath>>.Parse(ISequence<PathToken> t) 
+        IParseResult<IReadOnlyList<IPath>> IParser<PathToken, IReadOnlyList<IPath>>.Parse(ISequence<PathToken> t) 
             => _parser.Parse(t);
     }
 }

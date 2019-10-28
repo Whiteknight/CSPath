@@ -16,22 +16,22 @@ namespace CSPath.Parsing.Parsers
             _atLeastOne = atLeastOne;
         }
 
-        public (bool success, TOutput value) Parse(ISequence<TInput> t)
+        public IParseResult<TOutput> Parse(ISequence<TInput> t)
         {
             var items = new List<TItem>();
             while (true)
             {
-                var (success, value) = _parser.Parse(t);
-                if (!success)
+                var result = _parser.Parse(t);
+                if (!result.Success)
                     break;
-                items.Add(value);
+                items.Add(result.Value);
             }
 
             if (_atLeastOne && items.Count == 0)
-                return (false, default);
-            return (true, _produce(items));
+                return Result<TOutput>.Fail();
+            return new Result<TOutput>(true, _produce(items));
         }
 
-        public (bool success, object value) ParseUntyped(ISequence<TInput> t) => Parse(t);
+        public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();
     }
 }

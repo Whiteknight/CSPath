@@ -14,25 +14,25 @@ namespace CSPath.Parsing.Parsers
             _produce = produce;
         }
 
-        public (bool success, TOutput value) Parse(ISequence<TInput> t)
+        public IParseResult<TOutput> Parse(ISequence<TInput> t)
         {
             var window = new WindowSequence<TInput>(t);
             var outputs = new object[_parsers.Count];
             for (var i = 0; i < _parsers.Count; i++)
             {
-                var (success, value) = _parsers[i].ParseUntyped(window);
-                if (!success)
+                var result = _parsers[i].ParseUntyped(window);
+                if (!result.Success)
                 {
                     window.Rewind();
-                    return (false, default);
+                    return Result<TOutput>.Fail();
                 }
 
-                outputs[i] = value;
+                outputs[i] = result.Value;
             }
 
-            return (true, _produce(outputs));
+            return new Result<TOutput>(true, _produce(outputs));
         }
 
-        public (bool success, object value) ParseUntyped(ISequence<TInput> t) => Parse(t);
+        public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();
     }
 }

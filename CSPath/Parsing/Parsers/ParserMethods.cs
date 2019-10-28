@@ -6,55 +6,35 @@ namespace CSPath.Parsing.Parsers
 {
     public static class ParserMethods
     {
-        public static IParser<TInput, TOutput> Deferred<TInput, TOutput>(Func<IParser<TInput, TOutput>> getParser)
-        {
-            return new DeferredParser<TInput, TOutput>(getParser);
-        }
+        public static IParser<TInput, TOutput> Deferred<TInput, TOutput>(Func<IParser<TInput, TOutput>> getParser) 
+            => new DeferredParser<TInput, TOutput>(getParser);
 
-        public static IParser<TInput, TOutput> Error<TInput, TOutput>(string errorMessage)
-        {
-            return new ThrowExceptionParser<TInput, TOutput>(t => errorMessage);
-        }
+        public static IParser<TInput, TOutput> Error<TInput, TOutput>(string errorMessage) 
+            => new ThrowExceptionParser<TInput, TOutput>(t => errorMessage);
 
-        public static IParser<TInput, TOutput> Error<TInput, TOutput>(Func<ISequence<TInput>, string> getError)
-        {
-            return new ThrowExceptionParser<TInput, TOutput>(getError);
-        }
+        public static IParser<TInput, TOutput> Error<TInput, TOutput>(Func<ISequence<TInput>, string> getError) 
+            => new ThrowExceptionParser<TInput, TOutput>(getError);
 
-        public static IParser<TInput, TOutput> First<TInput, TOutput>(params IParser<TInput, TOutput>[] parsers)
-        {
-            return new FirstParser<TInput, TOutput>(parsers.ToArray());
-        }
+        public static IParser<TInput, TOutput> First<TInput, TOutput>(params IParser<TInput, TOutput>[] parsers) 
+            => new FirstParser<TInput, TOutput>(parsers.ToArray());
 
-        public static IParser<TInput, TOutput> If<TInput, TOutput>(Func<ISequence<TInput>, bool> predicate, IParser<TInput, TOutput> parser)
-        {
-            return new IfParser<TInput, TOutput>(predicate, parser);
-        }
+        public static IParser<TInput, TOutput> If<TInput, TOutput>(Func<ISequence<TInput>, bool> predicate, IParser<TInput, TOutput> parser) 
+            => new IfParser<TInput, TOutput>(predicate, parser);
 
-        public static IParser<TInput, TOutput> List<TInput, TItem, TOutput>(IParser<TInput, TItem> parser, Func<IReadOnlyList<TItem>, TOutput> produce, bool atLeastOne = false)
-        {
-            return new ListParser<TInput, TItem, TOutput>(parser, produce, atLeastOne);
-        }
+        public static IParser<TInput, TOutput> List<TInput, TItem, TOutput>(IParser<TInput, TItem> parser, Func<IReadOnlyList<TItem>, TOutput> produce, bool atLeastOne = false) 
+            => new ListParser<TInput, TItem, TOutput>(parser, produce, atLeastOne);
 
-        public static IParser<T, T> Match<T>(Func<T, bool> predicate)
-        {
-            return new PredicateParser<T, T>(predicate, t => t);
-        }
+        public static IParser<T, T> Match<T>(Func<T, bool> predicate) 
+            => new PredicateParser<T, T>(predicate, t => t);
 
-        public static IParser<TInput, TOutput> Match<TInput, TOutput>(Func<TInput, bool> predicate, Func<TInput, TOutput> produce)
-        {
-            return new PredicateParser<TInput, TOutput>(predicate, produce);
-        }
+        public static IParser<TInput, TOutput> Match<TInput, TOutput>(Func<TInput, bool> predicate, Func<TInput, TOutput> produce) 
+            => new PredicateParser<TInput, TOutput>(predicate, produce);
 
-        public static IParser<TInput, TOutput> Optional<TInput, TOutput>(IParser<TInput, TOutput> parser, Func<TOutput> getDefault = null)
-        {
-            return new OptionalParser<TInput, TOutput>(parser, getDefault);
-        }
+        public static IParser<TInput, TOutput> Optional<TInput, TOutput>(IParser<TInput, TOutput> parser, Func<TOutput> getDefault = null) 
+            => new OptionalParser<TInput, TOutput>(parser, getDefault);
 
-        public static IParser<TInput, TOutput> Produce<TInput, TOutput>(Func<TOutput> produce)
-        {
-            return new ProduceParser<TInput, TOutput>(produce);
-        }
+        public static IParser<TInput, TOutput> Produce<TInput, TOutput>(Func<TOutput> produce) 
+            => new ProduceParser<TInput, TOutput>(produce);
 
         public static IParser<TInput, TOutput> Require<TInput, TOutput>(IParser<TInput, TOutput> parser, string errorMessage)
         {
@@ -128,14 +108,10 @@ namespace CSPath.Parsing.Parsers
                 (list) => produce((T1) list[0], (T2) list[1], (T3) list[2], (T4) list[3], (T5) list[4], (T6) list[5], (T7) list[6], (T8) list[7], (T9) list[8]));
         }
 
-        public static IParser<TInput, TOutput> SeparatedList<TInput, TItem, TSeparator, TOutput>(IParser<TInput, TItem> itemParser, IParser<TInput, TSeparator> sepParser, Func<IReadOnlyList<TItem>, TOutput> produce, bool atLeastOne = false)
-        {
-            return new SeparatedListParser<TInput, TItem, TSeparator, TOutput>(itemParser, sepParser, produce, atLeastOne);
-        }
+        public static IParser<TInput, TOutput> SeparatedList<TInput, TItem, TSeparator, TOutput>(IParser<TInput, TItem> itemParser, IParser<TInput, TSeparator> sepParser, Func<IReadOnlyList<TItem>, TOutput> produce, bool atLeastOne = false) 
+            => new SeparatedListParser<TInput, TItem, TSeparator, TOutput>(itemParser, sepParser, produce, atLeastOne);
 
-        public static IParser<TInput, TTransform> Transform<TInput, TOutput, TTransform>(IParser<TInput, TOutput> parser, Func<TOutput, TTransform> produce)
-        {
-            return new TransformParser<TInput, TOutput, TTransform>(parser, produce);
-        }
+        public static IParser<TInput, TTransform> Transform<TInput, TOutput, TTransform>(IParser<TInput, TOutput> parser, Func<TOutput, TTransform> produce) 
+            => new TransformParser<TInput, TOutput, TTransform>(parser, produce);
     }
 }

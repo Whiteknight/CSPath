@@ -23,8 +23,8 @@ namespace CSPath
             var combinedParser = new PathParser(lexer, parser) as IParser<char, IReadOnlyList<IPath>>;
             var input = new StringCharacterSequence(path);
 
-            var (ok, pipeline) = combinedParser.Parse(input);
-            return ok ? pipeline.Filter(new[] { obj }) : null;
+            var result = combinedParser.Parse(input);
+            return result.Success ? result.Value.Filter(new[] { obj }) : null;
         }
     }
 }

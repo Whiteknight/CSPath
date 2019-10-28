@@ -13,17 +13,17 @@ namespace CSPath.Parsing.Parsers
             _getDefault = getDefault;
         }
 
-        public (bool success, object value) ParseUntyped(ISequence<TInput> t) => Parse(t);
+        public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();
 
-        public (bool success, TOutput value) Parse(ISequence<TInput> t)
+        public IParseResult<TOutput> Parse(ISequence<TInput> t)
         {
-            var (success, value) = _parser.Parse(t);
-            if (success)
-                return (true, value);
-            value = default;
+            var result = _parser.Parse(t);
+            if (result.Success)
+                return result;
+            TOutput value = default;
             if (_getDefault != null)
                 value = _getDefault();
-            return (true, value);
+            return new Result<TOutput>(true, value);
         }
     }
 }

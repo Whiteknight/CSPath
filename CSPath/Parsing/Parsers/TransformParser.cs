@@ -13,12 +13,12 @@ namespace CSPath.Parsing.Parsers
             _produce = produce;
         }
 
-        public (bool success, object value) ParseUntyped(ISequence<TInput> t) => Parse(t);
+        public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();
 
-        public (bool success, TTransform value) Parse(ISequence<TInput> t)
+        public IParseResult<TTransform> Parse(ISequence<TInput> t)
         {
-            var (success, value) = _parser.Parse(t);
-            return success ? (true, _produce(value)) : (false, default);
+            var result = _parser.Parse(t);
+            return result.Success ? new Result<TTransform>(true, _produce(result.Value)) : Result<TTransform>.Fail();
         }
     }
 }

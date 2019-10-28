@@ -10,11 +10,35 @@
 
     public interface IParser<TInput> : IParser
     {
-        (bool success, object value) ParseUntyped(ISequence<TInput> t);
+        IParseResult<object> ParseUntyped(ISequence<TInput> t);
     }
 
-    public interface IParser<TInput, TOutput> : IParser<TInput>
+    public interface IParser<TInput, out TOutput> : IParser<TInput>
     {
-        (bool success, TOutput value) Parse(ISequence<TInput> t);
+        IParseResult<TOutput> Parse(ISequence<TInput> t);
+    }
+
+    public interface IParseResult<out TOutput>
+    {
+        bool Success { get; }
+        TOutput Value { get; }
+
+        IParseResult<object> Untype();
+    }
+
+    public struct Result<TOutput> : IParseResult<TOutput>
+    {
+        public Result(bool success, TOutput value)
+        {
+            Success = success;
+            Value = value;
+        }
+
+        public bool Success { get; }
+        public TOutput Value { get; }
+
+        public IParseResult<object> Untype() => new Result<object>(Success, Value);
+
+        public static Result<TOutput> Fail() => new Result<TOutput>(false, default);
     }
 }

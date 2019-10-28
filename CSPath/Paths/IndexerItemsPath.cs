@@ -21,6 +21,7 @@ namespace CSPath.Paths
 
         private IEnumerable<object> GetItems(object item)
         {
+            // TODO: Need to change this so _indices are arguments to a single indexer, instead of consecutive calls to multiple indexers
             var type = item.GetType();
             if (type.IsArray && item is Array array)
                 return _indices.Where(i => i is int).Select(i => array.GetValue((int) i));

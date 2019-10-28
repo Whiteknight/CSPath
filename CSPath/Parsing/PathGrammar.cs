@@ -47,6 +47,7 @@ namespace CSPath.Parsing
             var indexerPaths = First(
                 Rule(
                     Token(TokenType.OpenBracket),
+                    // TODO: semi-colon separated lists
                     SeparatedList(
                         primitiveValues,
                         Token(TokenType.Comma),

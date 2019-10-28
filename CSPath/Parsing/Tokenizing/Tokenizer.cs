@@ -36,13 +36,13 @@ namespace CSPath.Parsing.Tokenizing
 
             while (true)
             {
-                var (success, value) = _scanner.Parse(_chars);
-                if (!success || value == null)
+                var result = _scanner.Parse(_chars);
+                if (!result.Success || result.Value == null)
                 {
                     _seenEnd = true;
                     return PathToken.EndOfInput();
                 }
-                return value;
+                return result.Value;
             }
         }
 
@@ -70,10 +70,10 @@ namespace CSPath.Parsing.Tokenizing
         {
             while (true)
             {
-                var (success, value) = _scanner.Parse(_chars);
-                if (!success || value == null || value.IsType(TokenType.EndOfInput))
+                var result = _scanner.Parse(_chars);
+                if (!result.Success || result.Value == null || result.Value.IsType(TokenType.EndOfInput))
                     break;
-                yield return value;
+                yield return result.Value;
             }
         }
 
