@@ -30,94 +30,24 @@ namespace CSPath.Parsing
                 Token(TokenType.Null, t => (object)null)
             );
 
-            IParser<PathToken, IReadOnlyList<IPath>> singlePath = null;
+            IParser<PathToken, IReadOnlyList<IPath>> singlePathInternal = null;
+            var singlePath = Deferred(() => singlePathInternal);
 
-            // property = "*" | "." <identifier> | "."
-            var propertyPaths = First(
-                Token(TokenType.Star, t => (IPath) new AllPropertiesNestedPath()),
-                Rule(
-                    Token(TokenType.Dot),
-                    Token(TokenType.Identifier),
-                    (dot, name) => (IPath) new NamedPropertyPath(name.Value)
-                ),
-                Transform(Token(TokenType.Dot), t => (IPath) new AllPropertiesPath())
-            );
+            var propertyPaths = BuildPropertyPaths();
 
-            // indexer = "[" "]" | "[" (<integer> | <string>)+ "]"
-            var indexerPaths = First(
-                Rule(
-                    Token(TokenType.OpenBracket),
-                    // TODO: semi-colon separated lists
-                    SeparatedList(
-                        primitiveValues,
-                        Token(TokenType.Comma),
-                        indices => indices
-                    ),
-                    Token(TokenType.CloseBracket), 
-                    (open, indices, close) => indices.Count == 0 ? (IPath)new AllIndexerItemsPath() : new IndexerItemsPath(indices)
-                )
-            );
+            var indexerPaths = BuildIndexerParser(primitiveValues);
 
-            // typeConstraint = "<" <identifier> ("." <identifier>)* ">"
-            var typeConstraintPaths = Rule(
-                Token(TokenType.OpenAngle),
-                // TODO: Generic and array types
-                Require(
-                    SeparatedList(
-                        Token(TokenType.Identifier),
-                        Token(TokenType.Dot),
-                        parts => string.Join(".", parts.Select(p => p.Value)),
-                        atLeastOne: true
-                    ),
-                    t => $"Unexpected token in type constraint {t.Peek()}"
-                ),
-                Require(
-                    Token(TokenType.CloseAngle),
-                    t => $"Expected '>' but found {t.Peek()}"
-                ),
-                (open, name, close) => (IPath) new TypedPath(name)
-            );
+            var typeConstraintPaths = BuildTypeConstraintParser();
 
-            // TODO: Form where we test that the selector returns at least some items without comparing values
-            // TODO: Form where we test that the selector returns no values, without comparisons
-            // TODO: Form where we test that the selector returns exactly one value, without comparison
-            // TODO: We could acheive this with named methods atleast(n), none() or exactly(n)
-            // "{" (<property> | <indexer>) "=" ("*" | "&" | "|" | "") (<primitive> | "null")
-            var predicateComparePaths = Rule(
-                Token(TokenType.OpenBrace),
-                Require(
-                    Deferred(() => singlePath),
-                    t => $"Expected path but found {t.Peek()}"
-                ),
-                First(
-                    // TODO: Support other equality comparisons < > <= >= !=
-                    Token(TokenType.Equals),
-                    Error<PathToken, PathToken>(t => $"Expected '=' but found {t.Peek()}")
-                ),
-                First(
-                    Token(TokenType.Star, t => t.Value),
-                    Token(TokenType.Plus, t => t.Value),
-                    Token(TokenType.Bar, t => t.Value),
-                    Produce<PathToken, string>(() => "")
-                ),
-                First(
-                    primitiveValues,
-                    Error<PathToken, object>(t => $"Expected primitive value but found {t.Peek()}")
-                ),
-                Require(
-                    Token(TokenType.CloseBrace),
-                    t => $"Expected '}}' but found {t.Peek()}"
-                ),
-                (open, path, eq, mod, value, close) => (IPath)new PredicatePath(path, eq.Value, value, mod)
-            );
+            var predicatePaths = BuildPredicateParser(singlePath, primitiveValues);
 
             // single = (<property> | <indexer> | <typeConstraint>)*
-            singlePath = List(
+            singlePathInternal = List(
                 First(
                     propertyPaths,
                     indexerPaths,
                     typeConstraintPaths,
-                    predicateComparePaths
+                    predicatePaths
                 ),
                 paths => paths
             );
@@ -148,6 +78,103 @@ namespace CSPath.Parsing
             //    stages => 
             //        (IPathStage) new PipelinePath(stages)
             //);
+        }
+
+        private static IParser<PathToken, IPath> BuildPropertyPaths()
+        {
+            // property = "*" | "." <identifier> | "."
+            var propertyPaths = First(
+                Token(TokenType.Star, t => (IPath) new AllPropertiesNestedPath()),
+                Rule(
+                    Token(TokenType.Dot),
+                    Token(TokenType.Identifier),
+                    (dot, name) => (IPath) new NamedPropertyPath(name.Value)
+                ),
+                Transform(Token(TokenType.Dot), t => (IPath) new AllPropertiesPath())
+            );
+            return propertyPaths;
+        }
+
+        private static IParser<PathToken, IPath> BuildPredicateParser(IParser<PathToken, IReadOnlyList<IPath>> singlePath, IParser<PathToken, object> primitiveValues)
+        {
+            var pathValueEqualityParser = Rule(
+                Require(singlePath, t => $"Expected path but found {t.Peek()}"),
+
+                // TODO: Support other equality comparisons < > <= >= !=
+                Require(Token(TokenType.Equals), t => $"Expected '=' but found {t.Peek()}"),
+                First(
+                    Token(TokenType.Star, t => t.Value),
+                    Token(TokenType.Plus, t => t.Value),
+                    Token(TokenType.Bar, t => t.Value),
+                    Produce<PathToken, string>(() => "")
+                ),
+                Require(primitiveValues, t => $"Expected primitive value but found {t.Peek()}"),
+                (path, eq, mod, value) => (IPath) new PredicatePath(path, eq.Value, value, mod)
+            );
+
+            // TODO: Form where we test that the selector returns at least some items without comparing values (".Any()"?)
+            // TODO: Form where we test that the selector returns no values, without comparisons
+            // TODO: Form where we test that the selector returns exactly one value, without comparison (".Single()"?)
+            // TODO: We could acheive this with named methods atleast(n), none() or exactly(n)
+            // "{" (<property> | <indexer>) "=" ("*" | "&" | "|" | "") (<primitive> | "null")
+            var predicateComparePaths = Rule(
+                Token(TokenType.OpenBrace),
+                pathValueEqualityParser,
+                Require(Token(TokenType.CloseBrace), t => $"Expected '}}' but found {t.Peek()}"),
+                (open, value, close) => value
+            );
+            return predicateComparePaths;
+        }
+
+        private static IParser<PathToken, IPath> BuildTypeConstraintParser()
+        {
+            // TODO: Generic and array types
+
+            var dottedTypeName = SeparatedList(
+                Token(TokenType.Identifier),
+                Token(TokenType.Dot),
+                parts => string.Join(".", parts.Select(p => p.Value)),
+                atLeastOne: true
+            );
+
+            // typeConstraint = "<" <identifier> ("." <identifier>)* ">"
+            var typeConstraintPaths = Rule(
+                Token(TokenType.OpenAngle),
+                Require(
+                    dottedTypeName,
+                    t => $"Unexpected token in type constraint {t.Peek()}"
+                ),
+                Require(
+                    Token(TokenType.CloseAngle),
+                    t => $"Expected '>' but found {t.Peek()}"
+                ),
+                (open, name, close) => (IPath) new TypedPath(name)
+            );
+            return typeConstraintPaths;
+        }
+
+        private static IParser<PathToken, IPath> BuildIndexerParser(IParser<PathToken, object> primitiveValues)
+        {
+            var commaSeparatedIndices = SeparatedList(
+                primitiveValues,
+                Token(TokenType.Comma),
+                indices => indices.Count == 0 ? (IPath) new AllIndexerItemsPath() : new IndexerItemsPath(indices)
+            );
+
+            var barSeparatedIndiceGroups = SeparatedList(
+                commaSeparatedIndices,
+                Token(TokenType.Bar),
+                indiceGroups => indiceGroups.Count == 0 ? indiceGroups.First() : new CombinePath(indiceGroups)
+            );
+
+            // indexer = "[" "]" | "[" (<integer> | <string>)+ "]"
+            var indexerPaths = Rule(
+                Token(TokenType.OpenBracket),
+                barSeparatedIndiceGroups,
+                Token(TokenType.CloseBracket),
+                (open, indices, close) => indices
+            );
+            return indexerPaths;
         }
     }
 }

@@ -12,6 +12,11 @@ namespace CSPath.Paths
             _paths = paths;
         }
 
+        public CombinePath(IEnumerable<IPath> paths)
+        {
+            _paths = paths.Select(p => (IReadOnlyList<IPath>) new List<IPath> { p }).ToList();
+        }
+
         public IEnumerable<object> Filter(IEnumerable<object> input)
         {
             var inputAsList = input.ToList();

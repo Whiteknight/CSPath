@@ -21,37 +21,32 @@ namespace CSPath.Paths
 
         private IEnumerable<object> GetItems(object item)
         {
-            // TODO: Need to change this so _indices are arguments to a single indexer, instead of consecutive calls to multiple indexers
             var type = item.GetType();
-            if (type.IsArray && item is Array array)
-                return _indices.Where(i => i is int).Select(i => array.GetValue((int) i));
+            if (type.IsArray && item is Array array && array.Rank == _indices.Count)
+            {
+                // TODO: These casts are probably going to fail for mixed-type indices. Need a more robust way to go about it.
+                if (_indices.All(i => i is int))
+                    return new[] { array.GetValue(_indices.Cast<int>().ToArray()) };
+                if (_indices.All(i => i is long))
+                    return new[] { array.GetValue(_indices.Cast<long>().ToArray()) };
+            }
 
             // Get public indexers with a single parameter
             // this list should be pretty short, most types will expose at most one or two of these
-            var indexers = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => p.CanRead && p.GetMethod != null)
-                .Select(p => new
-                {
-                    Property = p,
-                    IndexParameters = p.GetIndexParameters()
-                })
-                .Where(x => x.IndexParameters != null && x.IndexParameters.Length == 1)
-                .Select(x => new
-                {
-                    Property = x.Property,
-                    ParameterType = x.IndexParameters.Single().ParameterType,
-                })
-                .ToList();
+            var indexer = type
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .FirstOrDefault(p => p.CanRead && p.GetMethod != null && MatchesIndexArguments(p.GetIndexParameters()));
+            if (indexer == null)
+                return Enumerable.Empty<object>();
+            var value = indexer.GetMethod.Invoke(item, _indices.ToArray());
+            return new[] { value };
+        }
 
-            // foreach index, see if we have a matching indexer. If so, get the value
-            return _indices
-                .Select(idx => new
-                {
-                    Index = idx,
-                    Indexer = indexers.FirstOrDefault(idxr => idxr.ParameterType.IsInstanceOfType(idx))
-                })
-                .Where(x => x.Indexer != null)
-                .Select(x => x.Indexer.Property.GetMethod.Invoke(item, new[] { x.Index }));
+        private bool MatchesIndexArguments(ParameterInfo[] parameters)
+        {
+            if (parameters == null || parameters.Length != _indices.Count)
+                return false;
+            return !parameters.Where((t, i) => !t.ParameterType.IsInstanceOfType(_indices[i])).Any();
         }
     }
 }

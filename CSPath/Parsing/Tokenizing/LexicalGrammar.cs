@@ -35,6 +35,8 @@ namespace CSPath.Parsing.Tokenizing
                 // input char sequence returns "\0" for end-of-input. Detect that and return an EOI token
                 Match("\0", c => PathToken.EndOfInput()),
 
+                // TODO: Replace some of these match sequences, including keywords and operators, with a trie
+
                 // Keywords
                 Match("true", c => new PathToken(null, TokenType.True)),
                 Match("false", c => new PathToken(null, TokenType.False)),

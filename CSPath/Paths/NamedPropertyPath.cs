@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace CSPath.Paths
@@ -14,15 +15,15 @@ namespace CSPath.Paths
 
         public IEnumerable<object> Filter(IEnumerable<object> input)
         {
-            foreach (var obj in input)
-            {
-                if (obj == null)
-                    continue;
-                var property = obj.GetType().GetProperty(_name, BindingFlags.Public | BindingFlags.Instance);
-                if (property == null)
-                    continue;
-                yield return property.GetValue(obj);
-            }
+            return input
+                .Where(i => i != null)
+                .Select(i => new
+                {
+                    Object = i,
+                    Property = i.GetType().GetProperty(_name, BindingFlags.Public | BindingFlags.Instance)
+                })
+                .Where(x => x.Property != null)
+                .Select(x => x.Property.GetValue(x.Object));
         }
     }
 }

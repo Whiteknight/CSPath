@@ -10,18 +10,25 @@
         Dot,
         ForwardSlash,
         DoubleForwardSlash,
+
         Identifier,
+
         Bar,
         Star,
+        Comma,
+
         OpenBracket,
         CloseBracket,
+
         OpenParen,
         CloseParen,
+
         OpenAngle,
         CloseAngle,
-        Comma,
+
         OpenBrace,
         CloseBrace,
+
         Equals,
         Plus,
 
