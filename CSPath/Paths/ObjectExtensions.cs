@@ -6,6 +6,11 @@ namespace CSPath.Paths
 {
     public static class ObjectExtensions
     {
+        /// <summary>
+        /// Gets values of all public properties for the given object
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public static IEnumerable<object> GetPublicPropertyValues(this object obj)
         {
             if (obj == null)

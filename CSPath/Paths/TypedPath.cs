@@ -4,6 +4,11 @@ using System.Linq;
 
 namespace CSPath.Paths
 {
+    /// <summary>
+    /// Returns only values of the given type, determined by type name string.
+    /// If the type name contains any "." characters, it is considered to be a fully-qualified name.
+    /// Otherwise it is considered to be a short name.
+    /// </summary>
     public class TypedPath : IPath
     {
         private readonly string _typeName;

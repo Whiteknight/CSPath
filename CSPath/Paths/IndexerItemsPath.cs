@@ -5,6 +5,9 @@ using System.Reflection;
 
 namespace CSPath.Paths
 {
+    /// <summary>
+    /// Looks for and invokes public indexers on each object with the given index arguments
+    /// </summary>
     public class IndexerItemsPath : IPath
     {
         private readonly IReadOnlyList<object> _indices;

@@ -4,6 +4,12 @@ using System.Linq;
 
 namespace CSPath.Parsing.Parsers
 {
+    /// <summary>
+    /// Convenience parser to help with matching an expected sequence of inputs
+    /// Attempt to match the entire sequence specified by the input pattern or fail.
+    /// </summary>
+    /// <typeparam name="TInput"></typeparam>
+    /// <typeparam name="TOutput"></typeparam>
     public class MatchSequenceParser<TInput, TOutput> : IParser<TInput, TOutput>
     {
         private readonly TInput[] _find;
@@ -19,22 +25,21 @@ namespace CSPath.Parsing.Parsers
         {
             // small optimization, don't allocate a buffer if we only need one item
             if (_find.Length == 1)
-                return t.Peek().Equals(_find[0]) ? new Result<TOutput>(true, _produce(new[] { t.GetNext() })) : Result<TOutput>.Fail();
+                return t.Peek().Equals(_find[0]) ? new SuccessResult<TOutput>(_produce(new[] { t.GetNext() })) : (IParseResult<TOutput>)new FailResult<TOutput>();
 
+            var window = new WindowSequence<TInput>(t);
             var buffer = new TInput[_find.Length];
             for (var i = 0; i < _find.Length; i++)
             {
-                var c = t.GetNext();
-                buffer[i] = c;
-                if (c.Equals(_find[i]))
+                buffer[i] = window.GetNext();
+                if (buffer[i].Equals(_find[i]))
                     continue;
 
-                for (; i >= 0; i--)
-                    t.PutBack(buffer[i]);
-                return Result<TOutput>.Fail();
+                window.Rewind();
+                return new FailResult<TOutput>();
             }
 
-            return new Result<TOutput>(true, _produce(buffer));
+            return new SuccessResult<TOutput>(_produce(buffer));
         }
 
         public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();

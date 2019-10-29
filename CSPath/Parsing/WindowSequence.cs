@@ -2,6 +2,10 @@
 
 namespace CSPath.Parsing
 {
+    /// <summary>
+    /// Sequence which keeps track of all items and can rewind the entire batch at once
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class WindowSequence<T> : ISequence<T>
     {
         private readonly Stack<T> _window;

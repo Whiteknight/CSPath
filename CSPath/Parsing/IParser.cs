@@ -2,43 +2,70 @@
 {
     public interface IParser
     {
-        //string Name { get; set; }
-        //IParser Accept(IParserVisitorImplementation visitor);
-        //IEnumerable<IParser> GetChildren();
-        //IParser ReplaceChild(IParser find, IParser replace);
     }
 
+    /// <summary>
+    /// Parser class takes a sequence of TInput and outputs productions of unknown type
+    /// </summary>
+    /// <typeparam name="TInput"></typeparam>
     public interface IParser<TInput> : IParser
     {
         IParseResult<object> ParseUntyped(ISequence<TInput> t);
     }
 
+    /// <summary>
+    /// Parser class takes a sequence of TInput and outputs productions of type TOutput
+    /// </summary>
+    /// <typeparam name="TInput"></typeparam>
+    /// <typeparam name="TOutput"></typeparam>
     public interface IParser<TInput, out TOutput> : IParser<TInput>
     {
         IParseResult<TOutput> Parse(ISequence<TInput> t);
     }
 
+    /// <summary>
+    /// Parser result objects, contains a success/fail flag and the production value
+    /// </summary>
+    /// <typeparam name="TOutput"></typeparam>
     public interface IParseResult<out TOutput>
     {
         bool Success { get; }
         TOutput Value { get; }
 
+        /// <summary>
+        /// Convert the return value explicitly to object
+        /// (cast to IParseResult of object fails when TOutput is a struct/primitive type and boxing is involved)
+        /// </summary>
+        /// <returns></returns>
         IParseResult<object> Untype();
     }
 
-    public struct Result<TOutput> : IParseResult<TOutput>
+    /// <summary>
+    /// Represents a parse failure
+    /// </summary>
+    /// <typeparam name="TOutput"></typeparam>
+    public struct FailResult<TOutput> : IParseResult<TOutput>
     {
-        public Result(bool success, TOutput value)
+        public bool Success => false;
+        public TOutput Value => default;
+
+        public IParseResult<object> Untype() => new FailResult<object>();
+    }
+
+    /// <summary>
+    /// Represents a successful parse production
+    /// </summary>
+    /// <typeparam name="TOutput"></typeparam>
+    public struct SuccessResult<TOutput> : IParseResult<TOutput>
+    {
+        public SuccessResult(TOutput value)
         {
-            Success = success;
             Value = value;
         }
 
-        public bool Success { get; }
+        public bool Success => true;
         public TOutput Value { get; }
 
-        public IParseResult<object> Untype() => new Result<object>(Success, Value);
-
-        public static Result<TOutput> Fail() => new Result<TOutput>(false, default);
+        public IParseResult<object> Untype() => new SuccessResult<object>(Value);
     }
 }

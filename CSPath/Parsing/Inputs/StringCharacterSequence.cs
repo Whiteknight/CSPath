@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace CSPath.Parsing.Tokenizing
+namespace CSPath.Parsing.Inputs
 {
     public class StringCharacterSequence : ISequence<char>
     {

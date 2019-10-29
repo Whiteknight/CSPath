@@ -2,6 +2,12 @@
 
 namespace CSPath.Parsing.Parsers
 {
+    /// <summary>
+    /// Transforms the successfull output from one parser into another type
+    /// </summary>
+    /// <typeparam name="TInput"></typeparam>
+    /// <typeparam name="TOutput"></typeparam>
+    /// <typeparam name="TTransform"></typeparam>
     public class TransformParser<TInput, TOutput, TTransform> : IParser<TInput, TTransform>
     {
         private readonly IParser<TInput, TOutput> _parser;
@@ -18,7 +24,7 @@ namespace CSPath.Parsing.Parsers
         public IParseResult<TTransform> Parse(ISequence<TInput> t)
         {
             var result = _parser.Parse(t);
-            return result.Success ? new Result<TTransform>(true, _produce(result.Value)) : Result<TTransform>.Fail();
+            return result.Success ? new SuccessResult<TTransform>(_produce(result.Value)) : (IParseResult<TTransform>)new FailResult<TTransform>();
         }
     }
 }

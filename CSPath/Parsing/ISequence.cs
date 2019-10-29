@@ -1,7 +1,9 @@
 ﻿namespace CSPath.Parsing
 {
-    // Sequence is basically an Iterator pattern with a Putback
-    // (don't know if there's a better name for it)
+    /// <summary>
+    /// Iterator pattern implementation with putback
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public interface ISequence<T>
     {
         T GetNext();

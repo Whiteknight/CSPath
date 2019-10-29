@@ -51,8 +51,7 @@ namespace CSPath.Tests
         public void Path_ChildProperty_Multiline()
         {
             new TestClass2().Path(@"
-                .Value
-                .StringValue
+                .Value.StringValue
             ").Single().Should().Be("test");
         }
     }

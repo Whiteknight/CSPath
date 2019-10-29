@@ -3,6 +3,10 @@ using System.Linq;
 
 namespace CSPath.Paths
 {
+    /// <summary>
+    /// Concatenates the results of two or more paths together into a single output. May contain repeated
+    /// values if the paths return the same things
+    /// </summary>
     public class CombinePath : IPath
     {
         private readonly IReadOnlyList<IReadOnlyList<IPath>> _paths;

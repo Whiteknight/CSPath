@@ -3,31 +3,34 @@ using System.Linq;
 
 namespace CSPath.Paths
 {
+    /// <summary>
+    /// Recursively searches the entire object graph and returns all objects contained therein. Returns each
+    /// reference type instance only once (though repeated value type instances may be returned multiple times)
+    /// </summary>
     public class AllPropertiesNestedPath : IPath
     {
         public IEnumerable<object> Filter(IEnumerable<object> input)
         {
             var registry = new ObjectRegistry();
-            var workingSet = new Stack<object>();
-            // input is arbitrarily large, so we don't want to push it all onto the workingSet
-            // plus pushing them all in would reverse the order. order isn't required, but it's still unnecessary
-            foreach (var obj in input)
-            {
-                if (obj == null)
-                    continue;
-                if (!registry.CanVisit(obj))
-                    continue;
-                foreach (var prop in obj.GetPublicPropertyValues())
-                    workingSet.Push(prop);
 
-                while (workingSet.Count > 0)
-                {
-                    var current = workingSet.Pop();
-                    yield return current;
-                    var propertyValues = current.GetPublicPropertyValues().Where(registry.CanVisit);
-                    foreach (var propertyValue in propertyValues)
-                        workingSet.Push(propertyValue);
-                }
+            return input
+                .Where(i => i != null && registry.CanVisit(i))
+                .SelectMany(i => RecurseSingleObject(i, registry));
+        }
+
+        private static IEnumerable<object> RecurseSingleObject(object obj, ObjectRegistry registry)
+        {
+            var workingSet = new Stack<object>();
+            foreach (var prop in obj.GetPublicPropertyValues())
+                workingSet.Push(prop);
+
+            while (workingSet.Count > 0)
+            {
+                var current = workingSet.Pop();
+                yield return current;
+                var propertyValues = current.GetPublicPropertyValues().Where(registry.CanVisit);
+                foreach (var propertyValue in propertyValues)
+                    workingSet.Push(propertyValue);
             }
         }
 

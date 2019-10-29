@@ -3,6 +3,12 @@ using System.Collections.Generic;
 
 namespace CSPath.Parsing.Parsers
 {
+    /// <summary>
+    /// Execute a parser repeatedly until it fails. Return a list of all produced items.
+    /// </summary>
+    /// <typeparam name="TInput"></typeparam>
+    /// <typeparam name="TItem"></typeparam>
+    /// <typeparam name="TOutput"></typeparam>
     public class ListParser<TInput, TItem, TOutput> : IParser<TInput, TOutput>
     {
         private readonly IParser<TInput, TItem> _parser;
@@ -27,9 +33,7 @@ namespace CSPath.Parsing.Parsers
                 items.Add(result.Value);
             }
 
-            if (_atLeastOne && items.Count == 0)
-                return Result<TOutput>.Fail();
-            return new Result<TOutput>(true, _produce(items));
+            return _atLeastOne && items.Count == 0 ? (IParseResult<TOutput>)new FailResult<TOutput>() : new SuccessResult<TOutput>(_produce(items));
         }
 
         public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();

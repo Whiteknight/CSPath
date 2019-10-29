@@ -2,6 +2,11 @@
 
 namespace CSPath.Parsing.Parsers
 {
+    /// <summary>
+    /// Given a list of possible alternatives, return the result of the first parser which succeeds
+    /// </summary>
+    /// <typeparam name="TInput"></typeparam>
+    /// <typeparam name="TOutput"></typeparam>
     public class FirstParser<TInput, TOutput> : IParser<TInput, TOutput>
     {
         private readonly IReadOnlyList<IParser<TInput, TOutput>> _parsers;
@@ -20,7 +25,7 @@ namespace CSPath.Parsing.Parsers
                     return result;
             }
 
-            return Result<TOutput>.Fail();
+            return new FailResult<TOutput>();
         }
 
         public IParseResult<object> ParseUntyped(ISequence<TInput> t) => Parse(t).Untype();

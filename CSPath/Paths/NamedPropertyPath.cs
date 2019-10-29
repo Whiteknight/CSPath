@@ -4,6 +4,9 @@ using System.Reflection;
 
 namespace CSPath.Paths
 {
+    /// <summary>
+    /// Gets the value of a single public property by name, if it exists. Nothing otherwise
+    /// </summary>
     public class NamedPropertyPath : IPath
     {
         private readonly string _name;

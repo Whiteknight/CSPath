@@ -2,6 +2,11 @@
 
 namespace CSPath.Parsing.Parsers
 {
+    /// <summary>
+    /// Get a parser reference dynamically. Used to resolve circular references in the parser graph
+    /// </summary>
+    /// <typeparam name="TInput"></typeparam>
+    /// <typeparam name="TOutput"></typeparam>
     public class DeferredParser<TInput, TOutput> : IParser<TInput, TOutput>
     {
         private readonly Func<IParser<TInput, TOutput>> _getParser;

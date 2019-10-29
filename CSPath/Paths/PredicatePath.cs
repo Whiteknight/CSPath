@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace CSPath.Paths
 {
+    /// <summary>
+    /// Compares each object to a predicate condition and returns only those objects which satisfy
+    /// </summary>
     public class PredicatePath : IPath
     {
         private readonly IReadOnlyList<IPath> _selector;
@@ -49,9 +52,9 @@ namespace CSPath.Paths
         {
             switch (op)
             {
+                case "=" when value == null:
+                    return a => a == null;
                 case "=":
-                    if (value == null)
-                        return a => a == null;
                     return a => a != null && _value.Equals(a);
                 default:
                     throw new InvalidOperationException($"Operator {op} is not a valid comparison");

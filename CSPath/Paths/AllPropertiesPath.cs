@@ -4,6 +4,9 @@ using System.Reflection;
 
 namespace CSPath.Paths
 {
+    /// <summary>
+    /// Returns a list of all public property values for each input object
+    /// </summary>
     public class AllPropertiesPath : IPath
     {
         public IEnumerable<object> Filter(IEnumerable<object> input)
