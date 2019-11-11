@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CSPath.Paths;
+using CSPath.Types;
 using static CSPath.Parsing.Parsers.ParserMethods;
 
 namespace CSPath.Parsing
@@ -305,7 +306,7 @@ namespace CSPath.Parsing
                 )
             );
 
-            var predicateExpressions = Apply(
+            var predicateExpressions = RequireApply(
                 Require(_singlePath, t => $"Expected path but found {t.Peek()}"),
                 left => First(
                     // <singlePath> ("any()" | "none()")
@@ -369,24 +370,79 @@ namespace CSPath.Parsing
         {
             // TODO: Generic and array types
 
-            var dottedTypeName = SeparatedList(
-                _identifiers,
-                Characters("."),
-                parts => string.Join(".", parts),
-                atLeastOne: true
+            IParser<char, ITypeDescriptor> _typesInternal = null;
+            IParser<char, ITypeDescriptor> types = Deferred(() => _typesInternal);
+
+            // <identifier>
+            var simpleTypes = Transform(
+                _identifiers, 
+                name => 
+                    (ITypeDescriptor) new SimpleTypeDescriptor(name)
             );
 
-            var requiredDottedTypeName = LeadingWhitespace(
+            // <identifier> ("<" <types>+ ">")?
+            var genericTypes = Apply(
+                simpleTypes,
+                // TODO: Would like to be able to specify Type<> unqualified generic type definition
+                left => Rule(
+                    left,
+                    Characters("<"),
+                    SeparatedList(
+                        types,
+                        LeadingWhitespace(Characters(",")),
+                        t => t
+                    ),
+                    RequireCharacters(">"),
+
+                    (type, open, gentypes, close) => new GenericTypeDescriptor(type, gentypes)
+                )
+            );
+
+            // <genericType> ("." <genericType>)*
+            var qualifiedTypes = Transform(
+                SeparatedList(
+                    genericTypes,
+                    Characters("."),
+                    parts => parts,
+                    atLeastOne: true
+                ),
+                t => t.Count == 1 ? t.First() : new QualifiedTypeDescriptor(t)
+            );
+
+            // <qualifiedTypes> ("[" ","* "]")?
+            var arrayTypes = Apply(
+                qualifiedTypes,
+                left => Rule(
+                    left,
+                    Characters("["),
+                    List(
+                        Characters(","),
+                        commas => commas.Count + 1
+                    ),
+                    RequireCharacters("]"),
+
+                    (elementType, open, dimensions, close) => new ArrayTypeDescriptor(elementType, dimensions)
+
+                )
+            );
+
+            _typesInternal = Transform(
+                arrayTypes,
+                t => new CachingTypeDescriptor(t)
+            );
+
+            var requiredType = LeadingWhitespace(
                 Require(
-                    dottedTypeName, 
+                    _typesInternal, 
                     t => $"Unexpected token in type constraint {t.Peek()}"
                 )
             );
 
-            // typeConstraint = "<" <identifier> ("." <identifier>)* ">"
+            // "<" <requiredType> ">"
             var typeConstraintPaths = Rule(
                 Characters("<"),
-                requiredDottedTypeName,
+                requiredType,
+                //genericTypes,
                 LeadingWhitespace(RequireCharacters(">")),
                 (open, name, close) => (IPath) new TypedPath(name)
             );

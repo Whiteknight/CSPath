@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using CSPath.Types;
 
 namespace CSPath.Paths
 {
@@ -11,20 +11,16 @@ namespace CSPath.Paths
     /// </summary>
     public class TypedPath : IPath
     {
-        private readonly string _typeName;
-        private readonly bool _isFullyQualified;
+        private readonly ITypeDescriptor _decriptor;
 
-        public TypedPath(string typeName)
+        public TypedPath(ITypeDescriptor decriptor)
         {
-            _typeName = typeName;
-            _isFullyQualified = typeName.Contains(".");
+            _decriptor = decriptor;
         }
 
         public IEnumerable<object> Filter(IEnumerable<object> input)
         {
-            if (_isFullyQualified)
-                return input.Where(i => (i.GetType().FullName ?? string.Empty).Equals(_typeName, StringComparison.OrdinalIgnoreCase));
-            return input.Where(i => i.GetType().Name.Equals(_typeName, StringComparison.OrdinalIgnoreCase));
+            return input.Where(o => _decriptor.IsMatch(o.GetType()));
         }
     }
 }

@@ -6,8 +6,18 @@ namespace CSPath.Parsing.Parsers
 {
     public static class ParserMethods
     {
-        public static IParser<TInput, TOutput> Apply<TInput, TMiddle, TOutput>(IParser<TInput, TMiddle> left, Func<IParser<TInput, TMiddle>, IParser<TInput, TOutput>> getRight)
-            => new ApplyParser<TInput, TMiddle, TOutput>(left, getRight);
+        /// <summary>
+        /// Parse the first time and then attempt to parse the right rule. If the right rule cannot be parsed
+        /// the result of the left item is returned. This is used when we only want to parse the left side
+        /// of a postfix production once without backtracking
+        /// </summary>
+        /// <typeparam name="TInput"></typeparam>
+        /// <typeparam name="TOutput"></typeparam>
+        /// <param name="left"></param>
+        /// <param name="getRight"></param>
+        /// <returns></returns>
+        public static IParser<TInput, TOutput> Apply<TInput, TOutput>(IParser<TInput, TOutput> left, Func<IParser<TInput, TOutput>, IParser<TInput, TOutput>> getRight)
+            => new ApplyParser<TInput, TOutput>(left, getRight);
 
         public static IParser<char, string> Characters(string pattern)
             => new MatchSequenceParser<char, string>(pattern, c => pattern);
@@ -36,7 +46,7 @@ namespace CSPath.Parsing.Parsers
         public static IParser<TInput, TOutput> Match<TInput, TOutput>(IEnumerable<TInput> c, Func<TInput[], TOutput> produce) 
             => new MatchSequenceParser<TInput, TOutput>(c, produce);
 
-        public static IParser<TInput, TOutput> Optional<TInput, TOutput>(IParser<TInput, TOutput> parser, Func<TOutput> getDefault = null) 
+        public static IParser<TInput, TOutput> Optional<TInput, TOutput>(IParser<TInput, TOutput> parser, Func<TOutput> getDefault) 
             => First(
                 parser,
                 Produce<TInput, TOutput>(getDefault)
@@ -53,6 +63,19 @@ namespace CSPath.Parsing.Parsers
                 parser,
                 Error<TInput, TOutput>(getErrorMessage)
             );
+
+        /// <summary>
+        /// Parse the left side and then attempt to parse the right side. If the right side fails, the whole
+        /// production fails. This is used when we only want to parse the left side once without backtracking
+        /// </summary>
+        /// <typeparam name="TInput"></typeparam>
+        /// <typeparam name="TMiddle"></typeparam>
+        /// <typeparam name="TOutput"></typeparam>
+        /// <param name="left"></param>
+        /// <param name="getRight"></param>
+        /// <returns></returns>
+        public static IParser<TInput, TOutput> RequireApply<TInput, TMiddle, TOutput>(IParser<TInput, TMiddle> left, Func<IParser<TInput, TMiddle>, IParser<TInput, TOutput>> getRight)
+            => new ApplyParser<TInput, TMiddle, TOutput>(left, getRight);
 
         public static IParser<char, string> RequireCharacters(string pattern, string writeablePattern = null)
             => Require(Characters(pattern), t => $"Expected {writeablePattern ?? pattern} but found {t.Peek()}");
