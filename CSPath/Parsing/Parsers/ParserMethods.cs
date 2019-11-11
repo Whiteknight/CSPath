@@ -6,8 +6,14 @@ namespace CSPath.Parsing.Parsers
 {
     public static class ParserMethods
     {
+        public static IParser<TInput, TOutput> Apply<TInput, TMiddle, TOutput>(IParser<TInput, TMiddle> left, Func<IParser<TInput, TMiddle>, IParser<TInput, TOutput>> getRight)
+            => new ApplyParser<TInput, TMiddle, TOutput>(left, getRight);
+
         public static IParser<char, string> Characters(string pattern)
             => new MatchSequenceParser<char, string>(pattern, c => pattern);
+
+        public static IParser<char, TOutput> Characters<TOutput>(string pattern, Func<char[], TOutput> produce)
+            => new MatchSequenceParser<char, TOutput>(pattern, produce);
 
         public static IParser<TInput, TOutput> Deferred<TInput, TOutput>(Func<IParser<TInput, TOutput>> getParser) 
             => new DeferredParser<TInput, TOutput>(getParser);

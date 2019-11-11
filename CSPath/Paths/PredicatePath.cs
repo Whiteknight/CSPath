@@ -53,9 +53,15 @@ namespace CSPath.Paths
             switch (op)
             {
                 case "=" when value == null:
+                case "==" when value == null:
                     return a => a == null;
                 case "=":
+                case "==":
                     return a => a != null && _value.Equals(a);
+                case "!=" when value == null:
+                    return a => a != null;
+                case "!=":
+                    return a => !_value.Equals(a); 
                 default:
                     throw new InvalidOperationException($"Operator {op} is not a valid comparison");
             }

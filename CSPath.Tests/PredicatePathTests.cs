@@ -117,5 +117,85 @@ namespace CSPath.Tests
             target.Path("[]{.IsReadOnly = true}").ToList().Count.Should().Be(0);
             target.Path("[]{.IsReadOnly = false}").ToList().Count.Should().Be(1);
         }
+
+        [Test]
+        public void Path_ArrayArray_PredicateAny()
+        {
+            var target = new[]
+            {
+                new int[0],
+                new int[] { 1, },
+                new int[] { 1, 2 },
+                new int[] { 1, 2, 3 }
+            };
+            var result = target.Path("[]{[] any()}").ToList();
+            result.Count.Should().Be(3);
+            ((int[]) result[0]).Length.Should().Be(1);
+            ((int[]) result[1]).Length.Should().Be(2);
+            ((int[]) result[2]).Length.Should().Be(3);
+        }
+
+        [Test]
+        public void Path_ArrayArray_PredicateNone()
+        {
+            var target = new[]
+            {
+                new int[0],
+                new int[] { 1, },
+                new int[] { 1, 2 },
+                new int[] { 1, 2, 3 }
+            };
+            var result = target.Path("[]{[] none()}").ToList();
+            result.Count.Should().Be(1);
+            ((int[])result[0]).Length.Should().Be(0);
+        }
+
+        [Test]
+        public void Path_ArrayArray_PredicateExactly()
+        {
+            var target = new[]
+            {
+                new int[0],
+                new int[] { 1, },
+                new int[] { 1, 2 },
+                new int[] { 1, 2, 3 }
+            };
+            var result = target.Path("[]{[] exactly(2)}").ToList();
+            result.Count.Should().Be(1);
+            ((int[])result[0]).Length.Should().Be(2);
+        }
+
+        [Test]
+        public void Path_ArrayArray_PredicateAtLeast()
+        {
+            var target = new[]
+            {
+                new int[0],
+                new int[] { 1, },
+                new int[] { 1, 2 },
+                new int[] { 1, 2, 3 }
+            };
+            var result = target.Path("[]{[] atleast(2)}").ToList();
+            result.Count.Should().Be(2);
+            ((int[])result[0]).Length.Should().Be(2);
+            ((int[])result[1]).Length.Should().Be(3);
+        }
+
+        [Test]
+        public void Path_ArrayArray_PredicateAtMost()
+        {
+            var target = new[]
+            {
+                new int[0],
+                new int[] { 1, },
+                new int[] { 1, 2 },
+                new int[] { 1, 2, 3 }
+            };
+            var result = target.Path("[]{[] atmost(2)}").ToList();
+            result.Count.Should().Be(3);
+            ((int[])result[0]).Length.Should().Be(0);
+            ((int[])result[1]).Length.Should().Be(1);
+            ((int[])result[2]).Length.Should().Be(2);
+        }
     }
 }

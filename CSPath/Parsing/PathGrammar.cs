@@ -275,11 +275,19 @@ namespace CSPath.Parsing
 
         private IParser<char, IPath> InitializePredicatesParser()
         {
+            // comparisonOperators = ("!=" | "==" | "=")
             var comparisonOperators = LeadingWhitespace(
-                // TODO: Support other equality comparisons < > <= >= !=
-                RequireCharacters("=")
+                First(
+                    // We can't really support < > <= or >= operators because we're comparing objects and
+                    // not necessarily numeric types
+                    Characters("!="),
+                    Characters("=="),
+                    Characters("="),
+                    Error<char, string>(s => $"Expected comparison operator but found {s.Peek()}")
+                )
             );
 
+            // comparisonModifiers = ("*" | "+" | "|")?
             var comparisonModifiers = LeadingWhitespace(
                 First(
                     Characters("*"),
@@ -297,24 +305,61 @@ namespace CSPath.Parsing
                 )
             );
 
-            var pathValueEqualityParser = Rule(
+            var predicateExpressions = Apply(
                 Require(_singlePath, t => $"Expected path but found {t.Peek()}"),
-                comparisonOperators,
-                comparisonModifiers,
-                comparisonRightHandValue,
-                
-                (path, eq, mod, value) => (IPath) new PredicatePath(path, eq, value, mod)
+                left => First(
+                    // <singlePath> ("any()" | "none()")
+                    Rule(
+                        left,
+                        _whitespace,
+                        First(
+                            Characters("any()", c => true), 
+                            Characters("none()", c => false)
+                        ),
+
+                        (path, ws, any) => (IPath)new AnyPredicatePath(path, any)
+                    ),
+                    // <singlePath> "exactly(" <digit>+ ")"
+                    Rule(
+                        left,
+                        _whitespace,
+                        First(
+                            Characters("exactly"),
+                            Characters("atleast"),
+                            Characters("atmost")
+                        ),
+                        RequireCharacters("("),
+                        Require(
+                            List(
+                                Match<char>(char.IsDigit),
+                                c => int.Parse(new string(c.ToArray())),
+                                atLeastOne: true
+                            ),
+                            t => $"Expected integer argument but found {t.Peek()}"
+                        ),
+                        RequireCharacters(")"),
+
+                        (path, ws, func, start, num, end) => (IPath)new CountPredicatePath(path, num, func)
+                    ),
+                    // <singlePath> <comparisonOperator> <comparsionModifier> <comparisonRightHandValue>
+                    Rule(
+                        left,
+                        comparisonOperators,
+                        comparisonModifiers,
+                        comparisonRightHandValue,
+
+                        (path, op, mod, value) => (IPath)new PredicatePath(path, op, value, mod)
+                    ),
+                    Error<char, IPath>(s => $"Expected expression but found {s.Peek()}")
+                )
             );
 
-            // TODO: Form where we test that the selector returns at least some items without comparing values (".Any()"?)
-            // TODO: Form where we test that the selector returns no values, without comparisons
-            // TODO: Form where we test that the selector returns exactly one value, without comparison (".Single()"?)
-            // TODO: We could acheive this with named methods atleast(n), none() or exactly(n)
-            // "{" (<property> | <indexer>) "=" ("*" | "&" | "|" | "") (<primitive> | "null")
+            // "{" <pathValueEquality> "}"
             var predicateComparePaths = Rule(
                 Characters("{"),
-                LeadingWhitespace(pathValueEqualityParser),
+                LeadingWhitespace(predicateExpressions),
                 LeadingWhitespace(RequireCharacters("}")),
+
                 (open, value, close) => value
             );
             return predicateComparePaths;
