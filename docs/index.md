@@ -38,6 +38,19 @@ The `[ ]` operators denote an indexing operation
 * `[1]` or `["test"]` or `[1, 2]` You can use most primitive values as arguments to the indexer with expected results
 * `[1 | 2]` The `|` operator combines results. This is the same as `[1] | [2]`.
 
+### Primitive value literals
+
+CSPath supports several types of primitive value literals for use in indexing and predicates (see below for more info on predicates). Here are some examples of literals which are supported:
+
+* Integer literals: `123`, `-123`
+* Unsigned, Long and Unsigned Long literals: `123U`, `123L`, `-123L` and `123UL`
+* Hex integer literals: `0x123`, `0x123U`, `0x123L`, `0x123UL`
+* Float, Double and Decimal literals: `12.34`, `-12.34`, `12.34F`, `-12.34F`, `12.34M` and `-12.34M`
+* Character literals: `'a'`, `'\t'`, `'\x12AB'`, `'\u12AB'`, `'\U00010FFF'`
+* String literals: `"test"`, `"\tes\t"`, `"test\x12AB"`, `"test\u12AB"`, `"test\U00010FFF"`
+* Boolean literals: `true`, `false`
+* Null: `null`
+
 ## Type Constraints
 
 You can filter values by type with the `< >` operators:
@@ -54,9 +67,34 @@ This type-matching feature can use type short-names or fully-qualified names, or
 
 ## Predicates
 
-You can filter by basic predicates using the `{ }` operators.
+You can filter by basic predicates using the `{ }` operators and several regex-inspired arity modifiers. Here are a couple forms of predicate:
 
-TBD
+```csharp
+// Any object from the list which has exactly 2 properties of type string
+var has2Strings = myList.Path("[]{ .<string> }{2}");
+
+// From a list-of-lists, get all lists with 3 or 4 items
+var listsWith3Or4Items = myList.Path("[] { [] }{3,4}");
+
+// The Price from any LineItem which is Taxable
+var taxablePrices = myOrder.Path(".LineItems[]{ .IsTaxable = true }*.Price");
+```
+
+Paths must be on the left, followed optionally by a comparison operator and a primitive value. The following comparison operators are supported:
+
+* `=` and `==` Both denote equality (the former is included as a shorthand)
+* `!=` Denotes inequality
+
+Comparison values can be any of the primitive values described under the "Indexers" heading, above.
+
+Arity modifiers are:
+
+* `*` All objects match, or an empty list
+* `+` All objects match, at least one
+* `{N}` Exactly N objects match (where N is an integer)
+* `{N,}` N or more objects match (where N is an integer)
+* `{,N}` At most N objects match (where N is an integer)
+* `{N,M}` At least N but at most M objects match (where N and M are integers)
 
 ## Combining Paths
 
@@ -68,6 +106,23 @@ var allPrices = myOrder.Path(".LineItems*.Price");
 var allTaxablePrices = myOrder.Path(".LineItems[]{.IsTaxable = true}.Price");
 
 var allServiceCharges = myOrder.Path(".LineItems[]<ServiceCharge>");
+```
+
+You can also group alternations or any other path with parenthesis `( )`:
+
+```csharp
+var grouped = myObj.Path("(.Value1 | .Value2).Child");
+```
+
+Finally it's worth mentioning that you can organize your paths a little more nicely by using whitespace to separate different bits:
+
+```csharp
+var allTaxablePrices = myOrder.Path(@"
+    .LineItems
+    []
+    { .IsTaxable = true }
+    .Price"
+);
 ```
 
 ## Warnings

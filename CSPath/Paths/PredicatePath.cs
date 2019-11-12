@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using CSPath.Predicates;
 
 namespace CSPath.Paths
 {
@@ -10,16 +10,14 @@ namespace CSPath.Paths
     public class PredicatePath : IPath
     {
         private readonly IReadOnlyList<IPath> _selector;
-        private readonly object _value;
-        private readonly Func<object, bool> _predicate;
-        private readonly string _modifier;
+        private readonly IPathPredicate _predicate;
+        private readonly IArityComparer _arity;
 
-        public PredicatePath(IReadOnlyList<IPath> selector, string op, object value, string modifier)
+        public PredicatePath(IReadOnlyList<IPath> selector, IPathPredicate predicate, IArityComparer arity)
         {
             _selector = selector;
-            _value = value;
-            _modifier = modifier;
-            _predicate = GetPredicateFunc(op, value);
+            _predicate = predicate;
+            _arity = arity;
         }
 
         public IEnumerable<object> Filter(IEnumerable<object> input)
@@ -34,37 +32,7 @@ namespace CSPath.Paths
         private bool SatisfiesPredicate(object obj)
         {
             var values = _selector.Filter(new[] { obj }).ToList();
-            switch (_modifier)
-            {
-                // all, at least one (default)
-                case "": return values.Count >= 1 && values.All(value => _predicate(value));
-                // all, if any
-                case "*": return values.Count == 0 || values.All(value => _predicate(value));
-                // at least one
-                case "+": return values.Count >= 1 && values.Count(value => _predicate(value)) >= 1;
-                // exactly one
-                case "|": return values.Count >= 1 && values.Count(value => _predicate(value)) == 1;
-                default: throw new InvalidOperationException($"Unknown modifier {_modifier}");
-            }
-        }
-
-        private Func<object, bool> GetPredicateFunc(string op, object value)
-        {
-            switch (op)
-            {
-                case "=" when value == null:
-                case "==" when value == null:
-                    return a => a == null;
-                case "=":
-                case "==":
-                    return a => a != null && _value.Equals(a);
-                case "!=" when value == null:
-                    return a => a != null;
-                case "!=":
-                    return a => !_value.Equals(a); 
-                default:
-                    throw new InvalidOperationException($"Operator {op} is not a valid comparison");
-            }
+            return _arity.IsMatch(values, _predicate.Test);
         }
     }
 }

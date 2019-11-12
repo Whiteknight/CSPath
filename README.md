@@ -16,7 +16,7 @@ CSPath works like XPath, where you write a path as a string, and CSPath will ret
 * `<TypeName>` Allows only values of the given type (type short name, case-insensitive)
 * `<Fully.Qualified.TypeName>` Allows only values of the given type (type full name, case-insensitive)
 * `|` Takes all the results from the path on the left and all the results from the path on the right
-* `{<path> = <value>}` Returns results which satisfy a predicate
+* `(<path> = <value>)` Returns results which satisfy a predicate
 
 When you include the `CSPath` namespace, the `.Path()` method is available as an extension method on all `object`s. You can invoke it like this:
 
@@ -59,8 +59,10 @@ var result = myObj.Path(".Items[0].Values[\"Key\"].Length");
 Any object from a list which has a property "Count" which equals 2
 
 ```csharp
-var result = myObj.Path("[]{.Count = 2}");
+var result = myObj.Path("[](.Count = 2)*");
 ```
+
+See the documentation at [https://whiteknight.github.io/CSPath/] for more examples of syntax.
 
 ## Usages
 

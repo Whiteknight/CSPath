@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CSPath.Paths;
+using CSPath.Predicates;
 using CSPath.Types;
 using static CSPath.Parsing.Parsers.ParserMethods;
 
@@ -17,6 +18,7 @@ namespace CSPath.Parsing
         private readonly IParser<char, object> _primitives;
         private readonly IParser<char, IReadOnlyList<IPath>> _singlePathInternal;
         private readonly IParser<char, IReadOnlyList<IPath>> _singlePath;
+        private readonly IParser<char, IReadOnlyList<IPath>> _concatPaths;
         private readonly IParser<char, object> _whitespace;
         private readonly IParser<char, IReadOnlyList<IPath>> _parser;
 
@@ -28,29 +30,25 @@ namespace CSPath.Parsing
             _identifiers = InitializeIdentifiersParser();
             _primitives = InitializePrimitivesParser();
             _singlePathInternal = InitializeSinglePathsParser();
-            _parser = InitializeParser();
-        }
 
-        public static IParser<char, IReadOnlyList<IPath>> DefaultParserInstance => _instance.Value;
-
-        public IParser<char, IReadOnlyList<IPath>> GetParser() => _parser;
-
-        private IParser<char, IReadOnlyList<IPath>> InitializeParser()
-        {
             // concat = <single> ("|" <single>)* 
-            var concatPaths = SeparatedList(
-                _singlePath,
+            _concatPaths = SeparatedList(
+                _singlePathInternal,
                 LeadingWhitespace(Characters("|")),
                 paths => paths.Count == 1 ? paths[0] : new IPath[] { new CombinePath(paths) }
             );
 
             // <concat> <EndOfInput>
-            return Rule(
-                concatPaths,
+            _parser = Rule(
+                _concatPaths,
                 LeadingWhitespace(RequireCharacters("\0", "end of input")),
                 (stages, eoi) => stages
             );
         }
+
+        public static IParser<char, IReadOnlyList<IPath>> DefaultParserInstance => _instance.Value;
+
+        public IParser<char, IReadOnlyList<IPath>> GetParser() => _parser;
 
         private IParser<char, IReadOnlyList<IPath>> InitializeSinglePathsParser()
         {
@@ -58,6 +56,12 @@ namespace CSPath.Parsing
             var indexerPaths = InitializeIndexersParser();
             var typeConstraintPaths = InitializeTypeConstraintsParser();
             var predicatePaths = InitializePredicatesParser();
+            var groupedPaths = Rule(
+                Characters("("),
+                Deferred(() => _concatPaths),
+                Characters(")"),
+                (open, path, close) => path.Count == 1 ? path[0] : new GroupedPath(path)
+            );
 
             // single = (<property> | <indexer> | <typeConstraint>)*
             return List(
@@ -66,7 +70,8 @@ namespace CSPath.Parsing
                         propertyPaths,
                         indexerPaths,
                         typeConstraintPaths,
-                        predicatePaths
+                        predicatePaths,
+                        groupedPaths
                     )
                 ),
                 paths => paths
@@ -276,92 +281,62 @@ namespace CSPath.Parsing
 
         private IParser<char, IPath> InitializePredicatesParser()
         {
-            // comparisonOperators = ("!=" | "==" | "=")
-            var comparisonOperators = LeadingWhitespace(
-                First(
-                    // We can't really support < > <= or >= operators because we're comparing objects and
-                    // not necessarily numeric types
-                    Characters("!="),
-                    Characters("=="),
-                    Characters("="),
-                    Error<char, string>(s => $"Expected comparison operator but found {s.Peek()}")
-                )
+            var integer = List(
+                Match<char>(char.IsDigit),
+                c => int.Parse(new string(c.ToArray())),
+                atLeastOne: true
             );
 
-            // comparisonModifiers = ("*" | "+" | "|")?
-            var comparisonModifiers = LeadingWhitespace(
-                First(
-                    Characters("*"),
-                    Characters("+"),
-                    Characters("|"),
-                    Produce<char, string>(() => "")
-                )
-            );
-
-            var comparisonRightHandValue = LeadingWhitespace(
-                // TODO: Can we support anything else over here, like a path?
-                Require(
-                    _primitives,
-                    t => $"Expected primitive value but found {t.Peek()}"
-                )
-            );
-
-            var predicateExpressions = RequireApply(
-                Require(_singlePath, t => $"Expected path but found {t.Peek()}"),
-                left => First(
-                    // <singlePath> ("any()" | "none()")
-                    Rule(
-                        left,
-                        _whitespace,
+            var predicateExpression = First(
+                Rule(
+                    LeadingWhitespace(
                         First(
-                            Characters("any()", c => true), 
-                            Characters("none()", c => false)
-                        ),
-
-                        (path, ws, any) => (IPath)new AnyPredicatePath(path, any)
+                            Characters("=="),
+                            Characters("="),
+                            Characters("!=")
+                        )
                     ),
-                    // <singlePath> "exactly(" <digit>+ ")"
-                    Rule(
-                        left,
-                        _whitespace,
-                        First(
-                            Characters("exactly"),
-                            Characters("atleast"),
-                            Characters("atmost")
-                        ),
-                        RequireCharacters("("),
-                        Require(
-                            List(
-                                Match<char>(char.IsDigit),
-                                c => int.Parse(new string(c.ToArray())),
-                                atLeastOne: true
-                            ),
-                            t => $"Expected integer argument but found {t.Peek()}"
-                        ),
-                        RequireCharacters(")"),
+                    LeadingWhitespace(_primitives),
 
-                        (path, ws, func, start, num, end) => (IPath)new CountPredicatePath(path, num, func)
-                    ),
-                    // <singlePath> <comparisonOperator> <comparsionModifier> <comparisonRightHandValue>
-                    Rule(
-                        left,
-                        comparisonOperators,
-                        comparisonModifiers,
-                        comparisonRightHandValue,
-
-                        (path, op, mod, value) => (IPath)new PredicatePath(path, op, value, mod)
-                    ),
-                    Error<char, IPath>(s => $"Expected expression but found {s.Peek()}")
-                )
+                    (op, value) => op switch
+                    {
+                        "==" => new EqualsPathPredicate(value),
+                        "=" => new EqualsPathPredicate(value),
+                        "!=" => new NotEqualsPathPredicate(value),
+                        _ => (IPathPredicate) new AllPathPredicate()
+                    }
+                ),
+                Produce<char, IPathPredicate>(() => new AllPathPredicate())
             );
 
-            // "{" <pathValueEquality> "}"
+            var arityExpression = First(
+                Characters("*", c => new AllIfAnyArityComparer()),
+                Characters("+", c => new AllAtLeastOneArityComparer()),
+                Rule(
+                    Characters("{"),
+                    integer,
+                    Characters("}"),
+                    (open, value, close) => new ExactlyArityComparer(value)
+                ),
+                Rule(
+                    Characters("{"),
+                    Optional(integer, () => 0),
+                    Characters(","),
+                    Optional(integer, () => int.MaxValue),
+                    Characters("}"),
+                    (open, low, comma, high, close) => new RangeArityComparer(low, high)
+                ),
+                Error<char, IArityComparer>(s => $"Expected repetition specified but found {s.Peek()}")
+            );
+
             var predicateComparePaths = Rule(
-                Characters("{"),
-                LeadingWhitespace(predicateExpressions),
+                LeadingWhitespace(Characters("{")),
+                Require(_singlePath, t => $"Expected path but found {t.Peek()}"),
+                predicateExpression,
                 LeadingWhitespace(RequireCharacters("}")),
+                arityExpression,
 
-                (open, value, close) => value
+                (open, path, predicate, close, arity) => new PredicatePath(path, predicate, arity)
             );
             return predicateComparePaths;
         }
@@ -422,7 +397,6 @@ namespace CSPath.Parsing
                     RequireCharacters("]"),
 
                     (elementType, open, dimensions, close) => new ArrayTypeDescriptor(elementType, dimensions)
-
                 )
             );
 
