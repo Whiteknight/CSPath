@@ -14,17 +14,14 @@ namespace CSPath.Paths
             _any = any;
         }
 
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             if (_any)
                 return input.Where(obj => ApplyFilter(obj).Any());
             return input.Where(obj => !_path.Filter(new[] { obj }).Any());
         }
 
-        private IEnumerable<object> ApplyFilter(object obj)
-        {
-            var result = _path.Filter(new [] { obj }).ToList();
-            return result;
-        }
+        private IEnumerable<IValueWrapper> ApplyFilter(IValueWrapper obj) 
+            => _path.Filter(new[] { obj }).ToList();
     }
 }

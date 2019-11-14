@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using CSPath.Paths.Values;
 
 namespace CSPath.Paths
 {
@@ -17,21 +18,21 @@ namespace CSPath.Paths
             _indices = indices;
         }
 
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             return input.SelectMany(GetItems);
         }
 
-        private IEnumerable<object> GetItems(object item)
+        private IEnumerable<IValueWrapper> GetItems(IValueWrapper item)
         {
-            var type = item.GetType();
-            if (type.IsArray && item is Array array && array.Rank == _indices.Count)
+            var type = item.Value.GetType();
+            if (type.IsArray && item.Value is Array array && array.Rank == _indices.Count)
             {
                 // TODO: These casts are probably going to fail for mixed-type indices. Need a more robust way to go about it.
                 if (_indices.All(i => i is int))
-                    return new[] { array.GetValue(_indices.Cast<int>().ToArray()) };
+                    return new IValueWrapper[] { new SimpleValueWrapper(array.GetValue(_indices.Cast<int>().ToArray())) };
                 if (_indices.All(i => i is long))
-                    return new[] { array.GetValue(_indices.Cast<long>().ToArray()) };
+                    return new IValueWrapper[] { new SimpleValueWrapper(array.GetValue(_indices.Cast<long>().ToArray())) };
             }
 
             // Get public indexers with a single parameter
@@ -40,9 +41,9 @@ namespace CSPath.Paths
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .FirstOrDefault(p => p.CanRead && p.GetMethod != null && MatchesIndexArguments(p.GetIndexParameters()));
             if (indexer == null)
-                return Enumerable.Empty<object>();
-            var value = indexer.GetMethod.Invoke(item, _indices.ToArray());
-            return new[] { value };
+                return Enumerable.Empty<IValueWrapper>();
+            var value = indexer.GetMethod.Invoke(item.Value, _indices.ToArray());
+            return new IValueWrapper[] { new SimpleValueWrapper(value) };
         }
 
         private bool MatchesIndexArguments(ParameterInfo[] parameters)

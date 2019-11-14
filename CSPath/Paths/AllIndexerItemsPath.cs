@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using CSPath.Paths.Values;
 
 namespace CSPath.Paths
 {
@@ -10,12 +11,18 @@ namespace CSPath.Paths
     /// </summary>
     public class AllIndexerItemsPath : IPath
     {
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             return input.SelectMany(GetAllIndexerItems);
         }
 
-        private static IEnumerable<object> GetAllIndexerItems(object arg) 
-            => arg is IEnumerable enumerable ? enumerable.Cast<object>() : Enumerable.Empty<object>();
+        private static IEnumerable<IValueWrapper> GetAllIndexerItems(IValueWrapper arg)
+        {
+            if (!(arg.Value is IEnumerable enumerable))
+                return Enumerable.Empty<IValueWrapper>();
+            return enumerable
+                .Cast<object>()
+                .Select(o => (IValueWrapper) new SimpleValueWrapper(o));
+        }
     }
 }

@@ -17,7 +17,7 @@ namespace CSPath.Paths
             _func = func;
         }
 
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             switch (_func)
             {

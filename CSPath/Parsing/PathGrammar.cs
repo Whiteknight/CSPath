@@ -56,6 +56,8 @@ namespace CSPath.Parsing
             var indexerPaths = InitializeIndexersParser();
             var typeConstraintPaths = InitializeTypeConstraintsParser();
             var predicatePaths = InitializePredicatesParser();
+            var attributePaths = Characters("@", c => new AttributePath());
+
             var groupedPaths = Rule(
                 Characters("("),
                 Deferred(() => _concatPaths),
@@ -71,6 +73,7 @@ namespace CSPath.Parsing
                         indexerPaths,
                         typeConstraintPaths,
                         predicatePaths,
+                        attributePaths,
                         groupedPaths
                     )
                 ),
@@ -270,6 +273,8 @@ namespace CSPath.Parsing
             var allPropertiesNested = Match("*", t => new AllPropertiesNestedPath());
 
             var allProperties = Match(".", t => new AllPropertiesPath());
+
+            // TODO: "@" <name> gets attributes of the current properties somehow
 
             // property = "*" | "." <identifier> | "."
             return First<char, IPath>(

@@ -16,9 +16,6 @@ namespace CSPath.Types
 
         public bool IsMatch(Type type)
         {
-            // TODO: Type declared in C# as "A<B>.C<D>" is handled locally as "A<>.C<B, D>"
-            // "E<F>.G" => "E<>.G<F>"
-            // Need to find a way to handle that in the matcher logic
             if (!BaseType.IsMatch(type))
                 return false;
             if (!type.IsConstructedGenericType)

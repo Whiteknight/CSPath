@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using CSPath.Paths.Values;
 
 namespace CSPath.Paths
 {
@@ -16,17 +17,20 @@ namespace CSPath.Paths
             _name = name;
         }
 
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             return input
-                .Where(i => i != null)
+                .Where(i => i.Value != null)
                 .Select(i => new
                 {
-                    Object = i,
-                    Property = i.GetType().GetProperty(_name, BindingFlags.Public | BindingFlags.Instance)
+                    Object = i.Value,
+                    Property = i.Value.GetType().GetProperty(_name, BindingFlags.Public | BindingFlags.Instance)
                 })
                 .Where(x => x.Property != null)
-                .Select(x => x.Property.GetValue(x.Object));
+                .Select(x => (IValueWrapper)new AttributedValueWrapper(
+                    x.Property.GetValue(x.Object),
+                    x.Property.GetCustomAttributes()
+                ));
         }
     }
 }

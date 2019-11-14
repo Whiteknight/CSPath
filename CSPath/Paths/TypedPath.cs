@@ -18,9 +18,10 @@ namespace CSPath.Paths
             _decriptor = decriptor;
         }
 
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
-            return input.Where(o => _decriptor.IsMatch(o.GetType()));
+            // TODO: Value wrapper to include type information?
+            return input.Where(o => _decriptor.IsMatch(o.Value.GetType()));
         }
     }
 }

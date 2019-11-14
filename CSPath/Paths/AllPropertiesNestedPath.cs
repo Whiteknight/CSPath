@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using CSPath.Paths.Values;
 
 namespace CSPath.Paths
 {
@@ -9,13 +10,14 @@ namespace CSPath.Paths
     /// </summary>
     public class AllPropertiesNestedPath : IPath
     {
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             var registry = new ObjectRegistry();
 
             return input
-                .Where(i => i != null && registry.CanVisit(i))
-                .SelectMany(i => RecurseSingleObject(i, registry));
+                .Where(i => i != null && registry.CanVisit(i.Value))
+                .SelectMany(i => RecurseSingleObject(i.Value, registry))
+                .Select(i => (IValueWrapper)new SimpleValueWrapper(i));
         }
 
         private static IEnumerable<object> RecurseSingleObject(object obj, ObjectRegistry registry)

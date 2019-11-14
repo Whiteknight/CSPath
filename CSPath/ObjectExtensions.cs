@@ -3,13 +3,12 @@ using System.Linq;
 using CSPath.Parsing;
 using CSPath.Parsing.Inputs;
 using CSPath.Paths;
+using CSPath.Paths.Values;
 
 namespace CSPath
 {
     public static class ObjectExtensions
     {
-        // TODO: Variant to wrap each item in an Item object which will include information about where it came from
-
         /// <summary>
         /// Starting from the root object, recursively search for all publicly-visible object which match
         /// the given path and return them. Throws exceptions for incorrectly-formatted path strings.
@@ -30,7 +29,9 @@ namespace CSPath
             var input = new StringCharacterSequence(path);
 
             var result = (parser ?? PathGrammar.DefaultParserInstance).Parse(input);
-            return result.Success ? result.Value.Filter(new[] { root }) : null;
+            if (!result.Success)
+                return null;
+            return result.Value.Filter(new IValueWrapper[] { new SimpleValueWrapper(root) }).Select(w => w.Value);
         }
     }
 }

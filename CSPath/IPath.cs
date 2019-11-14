@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace CSPath.Paths
+namespace CSPath
 {
     /// <summary>
     /// A single stage in a path pipeline. Takes a sequence of object values and returns a sequence of
@@ -8,6 +8,6 @@ namespace CSPath.Paths
     /// </summary>
     public interface IPath
     {
-        IEnumerable<object> Filter(IEnumerable<object> input);
+        IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input);
     }
 }

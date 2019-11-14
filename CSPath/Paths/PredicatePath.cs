@@ -20,7 +20,7 @@ namespace CSPath.Paths
             _arity = arity;
         }
 
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             // For each object, apply the selector
             // For each value in the selector result, compare to the value
@@ -29,9 +29,9 @@ namespace CSPath.Paths
             return input.Where(SatisfiesPredicate);
         }
 
-        private bool SatisfiesPredicate(object obj)
+        private bool SatisfiesPredicate(IValueWrapper obj)
         {
-            var values = _selector.Filter(new[] { obj }).ToList();
+            var values = _selector.Filter(new[] { obj }).Select(v => v.Value).ToList();
             return _arity.IsMatch(values, _predicate.Test);
         }
     }

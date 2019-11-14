@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using CSPath.Paths.Values;
 
 namespace CSPath.Paths
 {
@@ -9,18 +10,21 @@ namespace CSPath.Paths
     /// </summary>
     public class AllPropertiesPath : IPath
     {
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             return input.SelectMany(GetPropertyValues);
         }
 
-        private static IEnumerable<object> GetPropertyValues(object obj)
+        private static IEnumerable<IValueWrapper> GetPropertyValues(IValueWrapper obj)
         {
-            if (obj == null)
-                return Enumerable.Empty<object>();
-            var type = obj.GetType();
+            if (obj.Value == null)
+                return Enumerable.Empty<IValueWrapper>();
+            var type = obj.Value.GetType();
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            var values = properties.Select(prop => prop.GetValue(obj));
+            var values = properties.Select(prop => new AttributedValueWrapper(
+                prop.GetValue(obj.Value),
+                prop.GetCustomAttributes()
+            ));
             return values;
         }
     }

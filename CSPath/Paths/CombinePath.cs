@@ -21,7 +21,7 @@ namespace CSPath.Paths
             _paths = paths.Select(p => (IReadOnlyList<IPath>) new List<IPath> { p }).ToList();
         }
 
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             var inputAsList = input.ToList();
             return _paths.SelectMany(p => p.Filter(inputAsList));

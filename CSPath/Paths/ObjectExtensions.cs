@@ -14,7 +14,7 @@ namespace CSPath.Paths
         public static IEnumerable<object> GetPublicPropertyValues(this object obj)
         {
             if (obj == null)
-                return Enumerable.Empty<object>();
+                return Enumerable.Empty<IValueWrapper>();
 
             return obj.GetType()
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)

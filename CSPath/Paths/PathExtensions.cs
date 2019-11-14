@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace CSPath.Paths
 {
-    public static class PathStageExtensions
+    public static class PathExtensions
     {
         /// <summary>
         /// Given a pipeline of IPath stages and an input sequence, execute the pipeline on the sequence
@@ -12,10 +12,10 @@ namespace CSPath.Paths
         /// <param name="stages"></param>
         /// <param name="input"></param>
         /// <returns></returns>
-        public static IEnumerable<object> Filter(this IEnumerable<IPath> stages, IEnumerable<object> input)
+        public static IEnumerable<IValueWrapper> Filter(this IEnumerable<IPath> stages, IEnumerable<IValueWrapper> input)
         {
             if (stages == null || input == null)
-                return Enumerable.Empty<object>();
+                return Enumerable.Empty<IValueWrapper>();
             var current = input;
             foreach (var stage in stages)
                 current = stage.Filter(current);

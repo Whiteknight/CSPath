@@ -11,7 +11,7 @@ namespace CSPath.Paths
             _path = path;
         }
 
-        public IEnumerable<object> Filter(IEnumerable<object> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
         {
             return _path.Filter(input);
         }
