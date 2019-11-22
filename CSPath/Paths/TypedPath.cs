@@ -19,9 +19,6 @@ namespace CSPath.Paths
         }
 
         public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
-        {
-            // TODO: Value wrapper to include type information?
-            return input.Where(o => _decriptor.IsMatch(o.Value.GetType()));
-        }
+            => input.Where(o => _decriptor.IsMatch(o.Value.GetType()));
     }
 }

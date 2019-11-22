@@ -17,6 +17,7 @@ namespace CSPath.Paths
         {
             if (obj is AttributedValueWrapper avw)
                 return avw.Attributes.Select(a => (IValueWrapper)new SimpleValueWrapper(a));
+            // TODO: Do we want the rest of this logic? It seems like it won't come up much
             if (obj.Value is ICustomAttributeProvider attrProvider)
                 return attrProvider.GetCustomAttributes(true).OfType<Attribute>().Select(a => (IValueWrapper) new SimpleValueWrapper(a));
             return obj.GetType().GetCustomAttributes(true).OfType<Attribute>().Select(a => (IValueWrapper)new SimpleValueWrapper(a));

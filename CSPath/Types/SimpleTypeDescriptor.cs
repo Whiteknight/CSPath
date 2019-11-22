@@ -7,14 +7,22 @@ namespace CSPath.Types
     {
         private static readonly IReadOnlyDictionary<string, string> _keywordTypeMap = new Dictionary<string, string>
         {
-            // TODO: Fill this list out more
+            { "bool", "Boolean" },
+            { "byte", "Byte" },
+            { "char", "Char" },
+            { "decimal", "Decimal" },
+            { "double", "Double" },
+            { "float", "Float" },
             { "int", "Int32" },
             { "long", "Int64" },
-            { "bool", "Boolean" }
+            { "sbyte", "SByte" },
+            { "short", "Int16" },
+            { "uint", "UInt32" },
+            { "ulong", "UInt64" },
+            { "ushort", "UInt16" }
         };
 
         public string Name { get; }
-
 
         public SimpleTypeDescriptor(string name)
         {

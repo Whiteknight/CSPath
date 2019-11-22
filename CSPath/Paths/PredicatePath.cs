@@ -20,17 +20,14 @@ namespace CSPath.Paths
             _arity = arity;
         }
 
-        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input) 
+            => input.Where(SatisfiesPredicate);
+
+        private bool SatisfiesPredicate(IValueWrapper obj)
         {
             // For each object, apply the selector
             // For each value in the selector result, compare to the value
             // return the object if and only iff all selector values satisfy the comparison
-
-            return input.Where(SatisfiesPredicate);
-        }
-
-        private bool SatisfiesPredicate(IValueWrapper obj)
-        {
             var values = _selector.Filter(new[] { obj }).Select(v => v.Value).ToList();
             return _arity.IsMatch(values, _predicate.Test);
         }

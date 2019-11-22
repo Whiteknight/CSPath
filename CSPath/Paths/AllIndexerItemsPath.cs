@@ -11,10 +11,8 @@ namespace CSPath.Paths
     /// </summary>
     public class AllIndexerItemsPath : IPath
     {
-        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
-        {
-            return input.SelectMany(GetAllIndexerItems);
-        }
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input) 
+            => input.SelectMany(GetAllIndexerItems);
 
         private static IEnumerable<IValueWrapper> GetAllIndexerItems(IValueWrapper arg)
         {

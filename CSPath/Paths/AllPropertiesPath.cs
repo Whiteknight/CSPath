@@ -10,10 +10,8 @@ namespace CSPath.Paths
     /// </summary>
     public class AllPropertiesPath : IPath
     {
-        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
-        {
-            return input.SelectMany(GetPropertyValues);
-        }
+        public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input) 
+            => input.SelectMany(GetPropertyValues);
 
         private static IEnumerable<IValueWrapper> GetPropertyValues(IValueWrapper obj)
         {
@@ -21,10 +19,12 @@ namespace CSPath.Paths
                 return Enumerable.Empty<IValueWrapper>();
             var type = obj.Value.GetType();
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            var values = properties.Select(prop => new AttributedValueWrapper(
-                prop.GetValue(obj.Value),
-                prop.GetCustomAttributes()
-            ));
+            var values = properties.Select(prop =>
+                new AttributedValueWrapper(
+                    prop.GetValue(obj.Value),
+                    prop.GetCustomAttributes()
+                )
+            );
             return values;
         }
     }

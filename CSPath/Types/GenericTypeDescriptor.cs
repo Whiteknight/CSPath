@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CSPath.Types
 {
@@ -23,13 +24,7 @@ namespace CSPath.Types
             var typeArgs = type.GetGenericArguments();
             if (typeArgs.Length != TypeArguments.Count)
                 return false;
-            for (int i = 0; i < typeArgs.Length; i++)
-            {
-                if (!TypeArguments[i].IsMatch(typeArgs[i]))
-                    return false;
-            }
-
-            return true;
+            return !typeArgs.Where((t, i) => !TypeArguments[i].IsMatch(t)).Any();
         }
     }
 }

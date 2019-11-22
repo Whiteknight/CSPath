@@ -15,11 +15,17 @@ The `.` operator allows you to access values of public properties.
 * `.` A dot by itself enumerates the values of all public properties
 * `.Name` A dot with a name gets the value of the public property with the same name
 * `*` An asterisk searches all properties in the object graph recursively, returning all public property values (ignoring circular references).
+* `@` Gets values of attributes of the property in the preceeding path
 
 ```csharp
+// Get all property values
 var allProperties = myObj.Path(".");
 
+// Get the value of the .Length property
 var justLength = myObj.Path(".Length");
+
+// Get any properties which have a Description attribute (predicates and type constraints described below)
+var propertiesWithDescriptions = myObj.Path(".{@<DescriptionAttribute>}+");
 ```
 
 ## Alternations
@@ -90,7 +96,7 @@ Comparison values can be any of the primitive values described under the "Indexe
 Arity modifiers are:
 
 * `*` All objects match, or an empty list
-* `+` All objects match, at least one
+* `+` All objects match, the list is not empty
 * `{N}` Exactly N objects match (where N is an integer)
 * `{N,}` N or more objects match (where N is an integer)
 * `{,N}` At most N objects match (where N is an integer)
@@ -106,6 +112,8 @@ var allPrices = myOrder.Path(".LineItems*.Price");
 var allTaxablePrices = myOrder.Path(".LineItems[]{.IsTaxable = true}.Price");
 
 var allServiceCharges = myOrder.Path(".LineItems[]<ServiceCharge>");
+
+var chargeDescriptions = myOrder.Path(".LineItems[].Price@<DescriptionAttribute>");
 ```
 
 You can also group alternations or any other path with parenthesis `( )`:
@@ -131,12 +139,14 @@ This library is intended for rare situations, and most cases of object graph tra
 
 * Performance of CSPath paths will be drastically decreased compared to LINQ expressions (runtime parsing effort plus reflection overhead).
 * CSPath paths are not checked at compile-type. Typos and errors will not be found until runtime.
-* CSPath paths are not resilient against refactoring. Changes in your object structure will break existing CSPath path strings.
+* CSPath paths are not resilient against refactoring. Changes in your object structure may break existing CSPath path strings.
 
 These issues not withstanding, there are some (rare) occasions when CSPath might still help your project. See if most of these conditions are true:
 
-* Your object structure doesn't change much, or you use semantic versioning and your CSPath path strings can be tied to major version numbers
+* Your object structure doesn't change much, but what you're searching for may change dynamically
+* Your objects are semantically versioned, and you can tie your path strings to specific major version numbers
+* Your object structure changes rapidly or is not fixed, but you need to be able to search for specific things no matter their location
 * Your use-case is dynamic in nature and cannot be satisfied by normal LINQ methods or other object-traversal techniques.
 * Your path strings are not known at compile time
 
-If your use-case meets all these requirements, and you understand the problems with using this tool, CSPath can be a helpful and handy little tool to have around.
+If these sound like your use-case and you understand the possible problems, CSPath can be a helpful and handy little tool to have around.
