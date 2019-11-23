@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using CSPath.Types;
 
@@ -19,6 +20,35 @@ namespace CSPath.Paths
         }
 
         public IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input)
-            => input.Where(o => _decriptor.IsMatch(o.Value.GetType()));
+            => input.Where(IsTypeMatch);
+
+        private bool IsTypeMatch(IValueWrapper o)
+        {
+            var workingSet = new Stack<Type>();
+            var current = o.Value.GetType();
+            if (_decriptor.IsMatch(current))
+                return true;
+
+            workingSet.Push(current.BaseType);
+            foreach (var iface in current.GetInterfaces())
+                workingSet.Push(iface);
+
+            // We don't need to de-dupe types here, because the _descriptor does caching
+            while (workingSet.Count > 0)
+            {
+                current = workingSet.Pop();
+                if (current == null)
+                    continue;
+
+                if (_decriptor.IsMatch(current))
+                    return true;
+
+                workingSet.Push(current.BaseType);
+                foreach (var iface in current.GetInterfaces())
+                    workingSet.Push(iface);
+            }
+
+            return false;
+        }
     }
 }

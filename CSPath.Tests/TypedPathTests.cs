@@ -50,6 +50,34 @@ namespace CSPath.Tests
             result[1].Should().Be("B");
         }
 
+        [Test]
+        public void Path_Typed_IFaceGeneric1()
+        {
+            var target = new TestClass2
+            {
+                Strings = new List<string> { "A", "B" },
+                Integers = new List<int> { 1, 2 }
+            };
+            var result = target.Path(".<IList<string>>[]").ToList();
+            result.Count.Should().Be(2);
+            result[0].Should().Be("A");
+            result[1].Should().Be("B");
+        }
+
+        [Test]
+        public void Path_Typed_IFaceGeneric2()
+        {
+            var target = new TestClass2
+            {
+                Strings = new List<string> { "A", "B" },
+                Integers = new List<int> { 1, 2 }
+            };
+            var result = target.Path(".<IEnumerable<string>>[]").ToList();
+            result.Count.Should().Be(2);
+            result[0].Should().Be("A");
+            result[1].Should().Be("B");
+        }
+
         public class A<T1>
         {
             public class C<T2>

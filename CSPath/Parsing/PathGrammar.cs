@@ -358,7 +358,6 @@ namespace CSPath.Parsing
                     (ITypeDescriptor) new SimpleTypeDescriptor(name)
             );
 
-            // TODO: ability to say "inherits from", so give me all classes which inherit from type T
             // TODO: ability to say type is struct or class (and even new()?)
             // Something like <:class,new()> or <:IMyInterface> would work
             // or bypass the angle brackets with just ":<constraint>"?
