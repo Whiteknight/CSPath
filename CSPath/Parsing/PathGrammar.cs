@@ -65,18 +65,18 @@ namespace CSPath.Parsing
                 (open, path, close) => path.Count == 1 ? path[0] : new GroupedPath(path)
             );
 
+            var allPaths = First(
+                propertyPaths,
+                indexerPaths,
+                typeConstraintPaths,
+                predicatePaths,
+                attributePaths,
+                groupedPaths
+            );
+
             // single = (<property> | <indexer> | <typeConstraint>)*
             return List(
-                LeadingWhitespace(
-                    First(
-                        propertyPaths,
-                        indexerPaths,
-                        typeConstraintPaths,
-                        predicatePaths,
-                        attributePaths,
-                        groupedPaths
-                    )
-                ),
+                LeadingWhitespace(allPaths),
                 paths => paths
             );
         }
@@ -101,6 +101,13 @@ namespace CSPath.Parsing
         {
             var hexCharacters = Match<char>(c => _hexDigits.Contains(c));
 
+            var intFormat = First(
+                Characters("UL"),
+                Characters("U"),
+                Characters("L"),
+                Produce<char, string>(() => "")
+            );
+
             // TODO: "_" separator in a number
             // "0x" <hexDigit>+ | "-"? <digit>+ "." <digit>+ <type>? | "-"? <digit>+ <type>?
             var hexNumbers = Rule(
@@ -110,12 +117,7 @@ namespace CSPath.Parsing
                     c => new string(c.ToArray()),
                     atLeastOne: true
                 ),
-                First(
-                    Characters("UL"),
-                    Characters("U"),
-                    Characters("L"),
-                    Produce<char, string>(() => "")
-                ),
+                intFormat,
                 (prefix, body, type) => type switch
                 {
                     "UL" => ulong.Parse(body, System.Globalization.NumberStyles.HexNumber),
@@ -163,12 +165,7 @@ namespace CSPath.Parsing
                     c => new string(c.ToArray()),
                     atLeastOne: true
                 ),
-                First(
-                    Match("UL", c => "UL"),
-                    Match("U", c => "U"),
-                    Match("L", c => "L"),
-                    Produce<char, string>(() => "")
-                ),
+                intFormat,
                 (neg, whole, type) => type switch
                 {
                     "UL" => ulong.Parse(whole),
@@ -274,8 +271,6 @@ namespace CSPath.Parsing
 
             var allProperties = Match(".", t => new AllPropertiesPath());
 
-            // TODO: "@" <name> gets attributes of the current properties somehow
-
             // property = "*" | "." <identifier> | "."
             return First<char, IPath>(
                 allPropertiesNested,
@@ -292,15 +287,15 @@ namespace CSPath.Parsing
                 atLeastOne: true
             );
 
+            var compareOperators = First(
+                Characters("=="),
+                Characters("="),
+                Characters("!=")
+            );
+
             var predicateExpression = First(
                 Rule(
-                    LeadingWhitespace(
-                        First(
-                            Characters("=="),
-                            Characters("="),
-                            Characters("!=")
-                        )
-                    ),
+                    LeadingWhitespace(compareOperators),
                     LeadingWhitespace(_primitives),
 
                     (op, value) => op switch
@@ -314,23 +309,28 @@ namespace CSPath.Parsing
                 Produce<char, IPathPredicate>(() => new AllPathPredicate())
             );
 
+            var exactArity = Rule(
+                Characters("{"),
+                integer,
+                Characters("}"),
+                (open, value, close) => new ExactlyArityComparer(value)
+            );
+
+            var rangeArity = Rule(
+                Characters("{"),
+                Optional(integer, () => 0),
+                Characters(","),
+                Optional(integer, () => int.MaxValue),
+                Characters("}"),
+
+                (open, low, comma, high, close) => new RangeArityComparer(low, high)
+            );
+
             var arityExpression = First(
                 Characters("*", c => new AllIfAnyArityComparer()),
                 Characters("+", c => new AllAtLeastOneArityComparer()),
-                Rule(
-                    Characters("{"),
-                    integer,
-                    Characters("}"),
-                    (open, value, close) => new ExactlyArityComparer(value)
-                ),
-                Rule(
-                    Characters("{"),
-                    Optional(integer, () => 0),
-                    Characters(","),
-                    Optional(integer, () => int.MaxValue),
-                    Characters("}"),
-                    (open, low, comma, high, close) => new RangeArityComparer(low, high)
-                ),
+                exactArity,
+                rangeArity,
                 Error<char, IArityComparer>(s => $"Expected repetition specified but found {s.Peek()}")
             );
 
@@ -354,8 +354,7 @@ namespace CSPath.Parsing
             // <identifier>
             var simpleTypes = Transform(
                 _identifiers, 
-                name => 
-                    (ITypeDescriptor) new SimpleTypeDescriptor(name)
+                name => (ITypeDescriptor) new SimpleTypeDescriptor(name)
             );
 
             // TODO: ability to say type is struct or class (and even new()?)
