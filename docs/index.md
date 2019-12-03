@@ -15,7 +15,7 @@ The `.` operator allows you to access values of public properties.
 * `.` A dot by itself enumerates the values of all public properties
 * `.Name` A dot with a name gets the value of the public property with the same name
 * `*` An asterisk searches all properties in the object graph recursively, returning all public property values (ignoring circular references).
-* `@` Gets values of attributes of the property in the preceeding path
+* `@` Gets values of attributes of the property in the preceeding path (not all paths include attribute information)
 
 ```csharp
 // Get all property values
@@ -69,7 +69,9 @@ var allListsOfString = myObjects.Path("<Generic.List<String>>");
 var allListsOfString = myObjects.Path("<System.Collections.Generic.List<System.String>>");
 ```
 
-This type-matching feature can use type short-names or fully-qualified names, or things in between. Notice that these strings don't respect any `using` directives you have active in your C# code file, those directives disappear from the CLR IL after compilation. The three examples above will all match a `System.Collections.Generic.List<string>` instance, but the first two may also match other classes which are also named `List` but live in other namespaces. The type matching algorithm is a suffix-matching algorithm, so it will start from the right and try to match as much as it has. This may lead to situations you didn't expect where classes have the same names.
+This type-matching feature can use type short-names or fully-qualified names, or things in between. Notice that these strings don't respect any `using` directives you have active in your C# code file, those directives disappear from the CLR IL after compilation. The three examples above will all match a `System.Collections.Generic.List<string>` instance, but the first two may also match other classes which are also named `List` but live in other namespaces. The type matching algorithm is a suffix-matching algorithm, so it will start from the right and try to match as much as it has. This may lead to situations you didn't expect where classes have the same names. When in doubt, try to provide the most specific type name you can.
+
+Notice that type keywords such as `int` or `string` will be 
 
 ## Predicates
 
@@ -107,12 +109,13 @@ Arity modifiers are:
 You can string together as many path operators as you want to find the data you are looking for:
 
 ```csharp
-var allPrices = myOrder.Path(".LineItems*.Price");
+// Get all .Price property values from the entire object graph
+var allPrices = myOrder.Path("*.Price");
 
-var allTaxablePrices = myOrder.Path(".LineItems[]{.IsTaxable = true}.Price");
+// Get all LineItems of type ServiceCharge which is marked as taxable
+var allTaxableServiceCharges = myOrder.Path(".LineItems[]<ServiceCharge>{.IsTaxable = true}");
 
-var allServiceCharges = myOrder.Path(".LineItems[]<ServiceCharge>");
-
+// Get all LineItem price property values which have a DescriptionAttribute
 var chargeDescriptions = myOrder.Path(".LineItems[].Price@<DescriptionAttribute>");
 ```
 
@@ -135,13 +138,13 @@ var allTaxablePrices = myOrder.Path(@"
 
 ## Warnings
 
-This library is intended for rare situations, and most cases of object graph traversal would be better served by LINQ method chains. Some of the problems to consider are:
+This library is intended for rare situations, and most cases of object graph traversal would be better served by LINQ method chains. Some of the issues to consider are:
 
 * Performance of CSPath paths will be drastically decreased compared to LINQ expressions (runtime parsing effort plus reflection overhead).
 * CSPath paths are not checked at compile-type. Typos and errors will not be found until runtime.
 * CSPath paths are not resilient against refactoring. Changes in your object structure may break existing CSPath path strings.
 
-These issues not withstanding, there are some (rare) occasions when CSPath might still help your project. See if most of these conditions are true:
+These issues not withstanding, there are some specific occasions when CSPath might still help your project. See if most of these conditions are true:
 
 * Your object structure doesn't change much, but what you're searching for may change dynamically
 * Your objects are semantically versioned, and you can tie your path strings to specific major version numbers

@@ -8,6 +8,11 @@ namespace CSPath
     /// </summary>
     public interface IPath
     {
+        /// <summary>
+        /// Given an input sequence of values, perform some operation on each and return the results.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
         IEnumerable<IValueWrapper> Filter(IEnumerable<IValueWrapper> input);
     }
 }
