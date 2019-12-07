@@ -38,28 +38,34 @@ Get all property values of type `Int32` from the current object:
 var result = myObj.Path(".<Int32>");
 ```
 
-Get all values of the list:
+Get all values of the enumerable:
 
 ```csharp
 var result = myObj.Path("[]");
 ```
 
-Get the first value of the list:
+Get a value from a list by index:
 
 ```csharp
-var result = myObj.Path("[0]");
-```
-
-Navigate a deeply-nested structure
-
-```csharp
-var result = myObj.Path(".Items[0].Values[\"Key\"].Length");
+var result = myObj.Path("[3]");
 ```
 
 Any object from a list which has a property "Count" which equals 2
 
 ```csharp
-var result = myObj.Path("[](.Count = 2)*");
+var result = myObj.Path("[]{.Count = 2}*");
+```
+
+Navigate a deeply-nested structure (whitepace is ignored)
+
+```csharp
+var result = myObj.Path(@"
+    .Items
+    .Values
+    [\"Key\"]
+    {.Length == 1}*
+    [0]
+");
 ```
 
 See the documentation at [https://whiteknight.github.io/CSPath/] for more examples of syntax.
@@ -80,4 +86,4 @@ This package *is not intended for high-performance applications*. There's a limi
 
 The parser and tokenizer are both built using combinator-based recursive descent. The parser outputs a list of `IPath` which are then invoked iteratively to return the final result.
 
-XML documents are just markup and don't come with built-in functionality. So, XPath has been designed with a lot of functionality to add some "behavior" to these documents. CSPath doesn't need to do that because C# objects have their own behaviors (methods, etc) and many use-cases can be better served by alternative mechanisms (LINQ Queries, method calls). CSPath does not intend to include all the functionality of XPath, though it does draw inspiration from XPath.
+XML documents are just markup and don't come with built-in functionality. So, XPath has been designed with a lot of functionality to add some "behavior" to these documents. CSPath doesn't need to do that because C# objects have their own behaviors (methods, etc) and many use-cases can be better served by alternative mechanisms (LINQ Queries, method calls). CSPath does not intend to include all the functionality of XPath, though it does draw inspiration from XPath syntax and concepts.
